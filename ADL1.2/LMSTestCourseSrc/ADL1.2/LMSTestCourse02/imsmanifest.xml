@@ -1,0 +1,93 @@
+<?xml version = "1.0"?>
+<manifest identifier="LMSTestCourse02_Manifest" version="1.2"
+       xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+       xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd
+                           http://www.imsglobal.org/xsd/imsmd_rootv1p2p1 imsmd_rootv1p2p1.xsd
+                           http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd">
+
+   <organizations default = "Course002">
+      <organization identifier = "Course002">
+         <title>LMS Test Suite - Course 2</title>
+         <item identifier="C2_LESSON1">
+            <title>LMS Test Suite - Lesson 1</title>
+            <item identifier="I_SCO1" identifierref="SCO01">
+               <title>LMS Test Suite Course 2 - SCO 01</title>
+               <adlcp:datafromlms>SCO01 Launch Data</adlcp:datafromlms>
+               <adlcp:masteryscore>70</adlcp:masteryscore>
+               <adlcp:maxtimeallowed>00:00:05</adlcp:maxtimeallowed>
+               <adlcp:timelimitaction>continue,message</adlcp:timelimitaction>
+            </item>
+            <item identifier = "I_SCO2" identifierref="SCO02">
+               <title>LMS Test Suite Course 2 - SCO 02</title>
+               <adlcp:prerequisites type="aicc_script">I_SCO1</adlcp:prerequisites>
+            </item>
+            <item identifier = "I_SCO3" identifierref="SCO03">
+               <title>LMS Test Suite Course 2 - SCO 03</title>
+               <adlcp:prerequisites type="aicc_script">I_SCO2</adlcp:prerequisites>
+            </item>
+            <metadata>
+               <schema>ADL SCORM</schema>
+               <schemaversion>1.2</schemaversion>
+               <adlcp:location>Lesson01\Lesson01.xml</adlcp:location>
+            </metadata>
+         </item>
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>LMSTestCourse02.xml</adlcp:location>
+         </metadata>
+      </organization>
+   </organizations>
+
+   <resources>
+
+      <resource identifier="SCO01" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco01.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco01.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco01.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO02" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco02.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco02.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco02.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO03" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco03.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco03.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco03.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="LMSFNCTS01" type="webcontent"
+                adlcp:scormtype="asset">
+         <file href="Lesson01/Resources/lmsrtefunctions.js"/>
+      </resource>
+
+      <resource identifier="LMSTESTCOURSEJAR01" type="webcontent"
+                adlcp:scormtype="asset">
+         <file href="Lesson01/Resources/LMSTestCourse.jar" />
+      </resource>
+
+   </resources>
+</manifest>

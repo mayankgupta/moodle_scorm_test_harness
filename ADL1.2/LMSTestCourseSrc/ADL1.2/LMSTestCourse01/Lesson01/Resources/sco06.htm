@@ -1,0 +1,553 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html>
+<script language="JAVASCRIPT">
+/*******************************************************************************
+** Filename:  SCO06.htm
+**
+** File Description: ADL SCORM Test Course I - SCO 06 - Tests the LMS's:
+**                   Launch Conformance
+**                   Audits LMS's implementation of
+**                   cmi.interactions data model elements
+**
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+** 05/17/2001     S.Thropp          PT 874: Removed the <param name = codebase
+**                                  from the applet
+**
+** 10/5/2001      Bill Capone       PT 1218 & 1234: Modified stored value in
+**                                  dataModelMatrix[10][3] from 'java' to 'j'.
+**                                  due to type of element that Array may hold.
+**
+**
+** 10/30/2001     Bill Capone       Updated a debug alert window.
+**
+**
+** 06/21/2011	  Mayank Gupta	    Modified doTest function. For alert compatibility
+**				    with Selenium WebDriver used in ADL 1.2
+**				    Test Script.
+/******************************************************************************/
+</script>
+<head>
+<meta http-equiv="expires" content="Tue, 20 Aug 1999 01:00:00 GMT">
+<meta http-equiv="Pragma" content="no-cache">
+<script language=JAVASCRIPT src="lmsrtefunctions.js">
+</script>
+<script language=JAVASCRIPT>
+
+
+   // Define data model related variables and constants
+
+   var dataModelMatrix = new Array(13);
+
+   var _R = 0; // read only
+   var _W = 1; // write only
+   var _RW = 2; // both read/write
+
+
+   var apiObj = null;
+
+
+   /*******************************************************************************
+   **
+   ** Function performTest()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function is the main test driver for this SCO.
+   **
+   *******************************************************************************/
+   function performTest()
+   {
+      if(_Debug)
+      {
+         alert("in performTest");
+      }
+
+      scoStatus = "incomplete";
+
+      // ************************************************************
+      // Test to see if the LMS launched the SCO in the correct order
+      // ************************************************************
+      testLaunch(1, 6);
+
+      // testLaunch() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // *********************************************
+      // Initialize the SCO by calling LMSInitialize()
+      // *********************************************
+      var result = doLMSInitialize();
+
+      // doLMSInitialize() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // Test the cmi.interactions data model elements
+      testDataModelInteractions();
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      doLMSSetValue("cmi.core.lesson_status", "completed");
+      doLMSSetValue("cmi.core.exit", "" );
+      doLMSSetValue("cmi.core.session_time", "03:01:39.52");
+
+      // Set the data model status
+      setDMStatus();
+
+      // Commit all data that was set
+      result = doLMSCommit();
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      lmsRTEApplet.setCurrentSCOStatus("completed");
+      teststatus.innerText = "Status:  This SCO Test Completed.";
+      // note the above text gets overwritten if LMSFinish fails.
+
+      //alert("Completing testing.  Please launch the next SCO.");
+
+      // *********************************************************************
+      // Invoke the LMSFinish() call to indicate the SCO is done communicating
+      // *********************************************************************
+      result = doLMSFinish();
+
+   }
+
+
+   /***************************************************************************
+   ** Function initializeDataModelMatrix()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function initializes an array of arrays (javascript doesn't have
+   ** multi-dimensional arrays) that serves as a data structure to house
+   ** information about the CMI datamodel.  It uses a array called
+   ** dataModelMatrix which is declared global to this page.
+   ** The matrix rows represent each possible data model element.  The arrays
+   ** of columns are defined as follows:
+   **     column   Description
+   **       0      Cmi data model element name
+   **       1      Accessibility from the SCO perspective:
+   **                    _R (SCO can Read only)
+   **                    _W (SCO can Write only)
+   **                    _RW (SCO can Read/Write)
+   **       2      Mandatory/Optional (true=mandatory / false=optional)
+   **       3      Value written (or to write) to the LMS (if writeable)
+   **       4      Element is found to be implemented by the LMS (true/false)
+   **
+   ***************************************************************************/
+   function initializeDataModelMatrix()
+   {
+
+      if(_Debug)
+      {
+         alert("in initializeDataModelMatrix()");
+      }
+
+      for(var j=0;j<dataModelMatrix.length;j++)
+      {
+         dataModelMatrix[j] = new Array(5);
+         dataModelMatrix[j][2] = false;  // Initialize to optional
+         dataModelMatrix[j][4] = false;   // Initialize to not implemented.
+      }
+
+      dataModelMatrix[0][0] = "cmi.interactions._children";
+      dataModelMatrix[0][1] = _R;
+
+
+      dataModelMatrix[1][0] = "cmi.interactions._count";
+      dataModelMatrix[1][1] = _R;
+
+      dataModelMatrix[2][0] = "cmi.interactions.n.id";
+      dataModelMatrix[2][1] = _W;
+      dataModelMatrix[2][3] = "I00";
+
+      dataModelMatrix[3][0] = "cmi.interactions.n.objectives._count";
+      dataModelMatrix[3][1] = _R;
+
+      dataModelMatrix[4][0] = "cmi.interactions.n.objectives.n.id";
+      dataModelMatrix[4][1] = _W;
+      dataModelMatrix[4][3] = "I099";
+
+      dataModelMatrix[5][0] = "cmi.interactions.n.time";
+      dataModelMatrix[5][1] = _W;
+      dataModelMatrix[5][3] = "00:00:03";
+
+
+      dataModelMatrix[6][0] = "cmi.interactions.n.type";
+      dataModelMatrix[6][1] = _W;
+      dataModelMatrix[6][3] = "performance";
+
+      dataModelMatrix[7][0] = "cmi.interactions.n.correct_responses._count";
+      dataModelMatrix[7][1] = _R;
+
+      dataModelMatrix[8][0] = "cmi.interactions.n.correct_responses.n.pattern";
+      dataModelMatrix[8][1] = _W;
+      dataModelMatrix[8][3] = "Alphanumeric Text since type is performance";
+
+      dataModelMatrix[9][0] = "cmi.interactions.n.weighting";
+      dataModelMatrix[9][1] = _W;
+      dataModelMatrix[9][3] = "10";
+
+      dataModelMatrix[10][0] = "cmi.interactions.n.student_response";
+      dataModelMatrix[10][1] = _W;
+      dataModelMatrix[10][3] = "Alphanumeric Text since type is performance";
+
+      dataModelMatrix[11][0] = "cmi.interactions.n.result";
+      dataModelMatrix[11][1] = _W;
+      dataModelMatrix[11][3] = "unanticipated";
+
+      dataModelMatrix[12][0] = "cmi.interactions.n.latency";
+      dataModelMatrix[12][1] = _W;
+      dataModelMatrix[12][3] = "00:05:00";
+
+      if(_Debug)
+      {
+         alert("done initializing dataModelMatrix");
+      }
+   }
+
+   /*******************************************************************************
+   ** function testDataModelInteractions()
+   ** inputs:  None
+   ** outputs: None
+   ** purpose:
+   **  This function determines if cmi.interactions optional data model elements
+   **  are implemented by the LMS, and if they are implemented correctly.
+   *******************************************************************************/
+   function testDataModelInteractions()
+   {
+      if(_Debug)
+      {
+         alert("in testDataModelInteractions()");
+      }
+      writeLogEntry(_INFO, "Beginning cmi.interactions data model element implementation auditing.");
+
+      initializeDataModelMatrix();
+
+      var rtnVal;
+
+      // *******************************
+      // test cmi.interactions._children
+      // *******************************
+      var intChildren = testGetValue(dataModelMatrix[0][0], 0);
+
+      // *******************************
+      // test cmi.interactions._count
+      // *******************************
+      var intCount = testGetValue(dataModelMatrix[1][0], 1);
+      // Convert string into its numeric equivalent.
+      intCount = parseInt(intCount);
+      if(dataModelMatrix[1][4] == true)
+      {
+         if(intCount != "0")
+         {
+            allOptional = false;
+            var logMsg = "cmi.interactions._count returned ";
+            logMsg += intCount;
+            logMsg += ".  No Interactions are defined yet.";
+            logMsg += " cmi.interactions._count should be zero (0)";
+            writeLogEntry(_FAILED, logMsg);
+         }
+      }
+
+      // *******************************
+      // Attempt to add 3 interactions to the list
+      // *******************************
+
+      for(var intIdx=0; intIdx<3; intIdx++)
+      {
+         // test cmi.interactions.n.id
+         testSetValue("cmi.interactions."+intIdx+".id", dataModelMatrix[2][3]+intIdx, 2);
+
+         // determine if there are any cmi.interactions.n.objectives
+         var objCount = testGetValue("cmi.interactions."+intIdx+".objectives._count", 3);
+         // Convert string into its numeric equivalent.
+         objCount = parseInt(objCount);
+         if(dataModelMatrix[3][4] == true)
+         {
+            if(objCount != "0")
+            {
+               allOptional = false;
+               var logMsg = "cmi.interactions."+intIdx+".objectives._count returned ";
+               logMsg += objCount;
+               logMsg += ".  No Objectives are defined yet for this interaction.";
+               logMsg += " cmi.interactions."+intIdx+".objectives._count should be zero (0)";
+               writeLogEntry(_FAILED, logMsg);
+            }
+         }
+
+         // *******************************
+         // attempt to add 2 cmi.interactions objectives
+         // *******************************
+         for(var objIdx=0;objIdx<2;objIdx++)
+         {
+
+            // test cmi.interactions.n.objectives.n.id
+            testSetValue("cmi.interactions."+intIdx+".objectives."+objIdx+".id", dataModelMatrix[4][3]+objIdx, 4);
+
+         }
+
+         // *******************************
+         // Now determine if there are any cmi.interactions.n.objectives
+         // *******************************
+         objCount = testGetValue("cmi.interactions."+intIdx+".objectives._count", 3);
+         // Convert string into its numeric equivalent.
+         objCount = parseInt(objCount);
+         if((dataModelMatrix[3][4] == true) &&
+            (dataModelMatrix[4][4] == true))
+         {
+            if(objCount != "2")
+            {
+               allOptional = false;
+               var logMsg = "cmi.interactions."+intIdx+".objectives._count returned ";
+               logMsg += objCount;
+               logMsg += ".  2 Objectives are defined for this interaction.";
+               logMsg += " cmi.interactions."+intIdx+".objectives._count should be 2 (two)";
+               writeLogEntry(_FAILED, logMsg);
+            }
+         }
+
+         // *******************************
+         // test cmi.interactions.n.time
+         // *******************************
+         testSetValue("cmi.interactions."+intIdx+".time", dataModelMatrix[5][3], 5);
+
+         // *******************************
+         // test cmi.interactions.n.type
+         // *******************************
+         testSetValue("cmi.interactions."+intIdx+".type", dataModelMatrix[6][3], 6);
+
+         // *******************************
+         // determine if there are any cmi.interactions.n.correct_responses
+         // *******************************
+         var crCount = testGetValue("cmi.interactions."+intIdx+".correct_responses._count", 7);
+         // Convert string into its numeric equivalent.
+         crCount = parseInt(crCount);
+         if(dataModelMatrix[7][4] == true)
+         {
+            if(crCount != "0")
+            {
+               allOptional = false;
+               var logMsg = "cmi.interactions."+intIdx+".correct_responses._count returned ";
+               logMsg += crCount;
+               logMsg += ".  No correct responses have been defined for this interaction.";
+               logMsg += " cmi.interactions."+intIdx+".correct_responses._count should be zero (0)";
+               writeLogEntry(_FAILED, logMsg);
+            }
+         }
+
+         // ***********************************
+         // test cmi.interactions.n.correct_responses.n.pattern
+         // ***********************************
+         testSetValue("cmi.interactions."+intIdx+".correct_responses.0.pattern", dataModelMatrix[8][3], 8);
+
+
+         // ***********************************
+         // determine if there are any cmi.interactions.n.correct_responses
+         // ***********************************
+         crCount = testGetValue("cmi.interactions."+intIdx+".correct_responses._count", 7);
+         // Convert string into its numeric equivalent.
+         crCount = parseInt(crCount);
+         if((dataModelMatrix[7][4] == true) &&
+            (dataModelMatrix[8][4] == true))
+         {
+            if(crCount != "1")
+            {
+               allOptional = false;
+               var logMsg = "cmi.interactions."+intIdx+".correct_responses._count returned ";
+               logMsg += crCount;
+               logMsg += ".  One correct response has been defined for this interaction.";
+               logMsg += " cmi.interactions."+intIdx+".correct_responses._count should be 1 (one)";
+               writeLogEntry(_FAILED, logMsg);
+            }
+         }
+
+         // ***********************************
+         // test cmi.interactions.n.weighting
+         // ***********************************
+         testSetValue("cmi.interactions."+intIdx+".weighting", dataModelMatrix[9][3], 9);
+
+         // ***********************************
+         // test cmi.interactions.n.student_response
+         // ***********************************
+         testSetValue("cmi.interactions."+intIdx+".student_response", dataModelMatrix[10][3], 10);
+
+         // ***********************************
+         // test cmi.interactions.n.result
+         // ***********************************
+         testSetValue("cmi.interactions."+intIdx+".result", dataModelMatrix[11][3], 11);
+
+         // ***********************************
+         // test cmi.interactions.n.latency
+         // ***********************************
+         testSetValue("cmi.interactions."+intIdx+".latency", dataModelMatrix[12][3], 12);
+
+         // change the interaction type for each iteration...
+         if(intIdx == 0)
+         {
+            dataModelMatrix[6][3] = "true-false";   // type
+            dataModelMatrix[8][3] = "t"; // correct response
+            dataModelMatrix[10][3] = "f"; // student response
+            dataModelMatrix[11][3] = "wrong"; // result
+         }
+         if(intIdx == 1)
+         {
+            dataModelMatrix[6][3] = "likert";   // type
+            dataModelMatrix[8][3] = ""; // correct response
+            dataModelMatrix[10][3] = "j"; // student response
+            dataModelMatrix[11][3] = "neutral"; // result
+         }
+      }
+
+      // check the resulting count
+      if(intChildren != "") // if there are children, there should be a count
+      {
+         intCount = testGetValue(dataModelMatrix[1][0], 1);
+         // Convert string into its numeric equivalent.
+         intCount = parseInt(intCount);
+         if(dataModelMatrix[1][4] == true)
+         {
+            if(intCount != "3")
+            {
+               allOptional = false;
+
+               var logMsg = "cmi.interactions._count returned ";
+               logMsg += intCount;
+               logMsg += " cmi.interactions._count should be 3 (three)";
+               writeLogEntry(_FAILED,logMsg);
+            }
+         }
+      }
+
+      return;
+
+      // END OF DATA MODEL TESTING}
+   }
+
+</script>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course I - SCO #06</title>
+</head>
+<body onload="performTest();">
+
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course I - SCO #06 <br />
+<br />
+<br />
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</div>
+</font>
+<br />
+<hr color="#353889">
+<br />
+<p>
+</p>
+<p>
+Please view the ADL test  suite log for detailed progress and status information
+for this test.
+</p>
+<p>
+This test may take several minutes to complete. Please be patient!
+</p>
+<p>
+Depending upon the functionality of the LMS, this SCO may or may not be unloaded
+automatically upon conclusion of the testing performed by the SCO. When the SCO
+completes, the status above will change to "<strong><em>This SCO Test Completed.</em></strong>
+".  If the LMS does NOT automatically sequence SCO's, then please navigate to
+the next SCO manually when this status is displayed.
+</p>
+<p>
+This Sharable Content Object (SCO) tests the Learning Management System for
+conformance with the Runtime Environment Guidelines as described in the SCORM.
+Specifically, this SCO performs the following:
+</p>
+<ol>
+   <ol>
+      <li>
+         Validates that this SCO was launched in the appropriate sequence (sixth)
+      <li>
+         Locates the LMS's API implementation
+      <li>
+         Calls the LMSInitialize function
+      <li>
+         Determines if the cmi.interactions optional data model elements are implemented,
+         and if so, are implemented correctly?
+      <li>
+         Calls the LMSCommit function
+      <li>
+         Calls the LMSFinish function
+      </li>
+   </ol>
+</ol>
+<br />
+<hr color="#353889">
+</body>
+</html>

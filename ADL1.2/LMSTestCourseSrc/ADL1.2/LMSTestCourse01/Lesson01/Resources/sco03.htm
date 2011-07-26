@@ -1,0 +1,538 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html>
+<script language="JAVASCRIPT">
+/*******************************************************************************
+** Filename:  sco03.htm
+**
+** File Description: ADL SCORM Test Course I - SCO 03 - Tests the LMS's:
+**                   Launch Conformance
+**                   API implementation Conformance - specifically error handling
+**                   ability when functions are called prior to LMSInitialize
+**
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+** 05/17/2001     S.Thropp          PT 874: Removed the <param name = codebase
+**                                  from the applet
+**
+** 10/30/2001     Bill Capone       Removed some incorrect comments.
+**
+** 11/27/2001     Jeff Falls        Fixed the test for correct use of "credit"
+**                                  and "no-credit"
+**
+** 03/07/2002     Bill Capone       PT 1763: Changed the set for lesson_status
+**                                  from failed to completed.  Change occurred
+**                                  in performTest().
+**
+** 06/21/2011	  Mayank Gupta	    Modified performTest function. For alert 
+**				    compatibility with Selenium WebDriver used 
+**				    in ADL 1.2 Test Script.
+**
+/*******************************************************************************/
+</script>
+<head>
+<meta http-equiv="expires" content="Tue, 20 Aug 1999 01:00:00 GMT">
+<meta http-equiv="Pragma" content="no-cache">
+<script language=JAVASCRIPT src="lmsrtefunctions.js"></script>
+<script language=JAVASCRIPT>
+   /****************************************************************************
+   **
+   ** Function performTest()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function is the main test driver for this SCO.
+   **
+   ****************************************************************************/
+   function performTest()
+   {
+
+      if(_Debug)
+      {
+         alert("in performTest()");
+      }
+
+      scoStatus = "incomplete";
+
+      // ************************************************************
+      // Test to see if the LMS launched the SCO in the correct order
+      // ************************************************************
+      testLaunch(1, 3);
+
+      // testLaunch() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // ************************************************************
+      // Find and set up the API, in order for the SCO to communicate
+      // ************************************************************
+      setAPIHandle(null);
+
+      // setAPIHandle() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      var result;
+      var logMsg;
+
+      writeLogEntry(_INFO, "Testing API Functions");
+      writeLogEntry(_OTHER, "");
+
+      // ***********************************************************
+      // Call LMSGetLastError to see what the initial error state is
+      //
+      // Test to make sure the LMS can handle a valid call before
+      // LMSInitialize().  The State Management API calls are valid
+      // before LMSInitialize()
+      // The expected results is that the LMS will return a value of "0"
+      //
+         writeLogEntry(_INFO, "Calling LMSGetLastError() - (prior to calling LMSInitialize)");
+         logMsg =  "Attempting LMSGetLastError().";
+         logMsg += " Expecting return error code value of &quot;0&quot; (No Error).";
+         writeLogEntry(_INFO, logMsg);
+
+         // Attempt to make the call to LMSGetLastError()
+         result = apiHandle.LMSGetLastError();
+
+         logMsg = "LMSGetLastError returned &quot;"+result+"&quot;";
+
+         // Check to make sure the LMS returned the appropriate error code
+         // 0 - No Error
+         if(result != _NoError)
+         {
+            // It appears that the LMS did not return the appropriate error code
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            // It appears that the LMS returned the appropriate error code
+            writeLogEntry(_PASSED, logMsg);
+         }
+      //
+      // ******************************************************************
+
+      // ******************************************************************
+      // Call LMSSetValue to determine if it returns the correct error code
+      // - noting that LMSInitialize has not been called yet...
+      //
+      // The expected results is that the LMS will return "false" and set the
+      // the API Error Code to 301 - Not initialized
+      //
+         writeLogEntry(_INFO, "Calling LMSSetValue(&quot;cmi.core.score.raw&quot;, &quot;10&quot;) - (prior to calling LMSInitialize)");
+
+         // Attempt to make the LMSSetValue() call before LMSInitialize()
+         result = apiHandle.LMSSetValue("cmi.core.score.raw", "10");
+
+         // Check the return value from the LMS
+         if(result != "true" && result != "false")
+         {
+            // The LMS did not return the correct value
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, "LMSSetValue returned &quot;"+result+"&quot;, expected return value &quot;true&quot; or &quot;false&quot;");
+         }
+         else
+         {
+            // Get the Error Code and the coorsponding Error Description
+            var errorCode = apiHandle.LMSGetLastError();
+            var errorDesc = apiHandle.LMSGetErrorString(errorCode);
+            logMsg = "LMSSetValue returned &quot;"+result+"&quot; and set the API Error Code to &quot;";
+            logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+            // Check to make sure the LMS returned what was expected
+            if(result == "false")
+            {
+               // LMS returned what was expected, make sure the appropriate
+               // error code was set
+               if(errorCode != _NotInitialized)
+               {
+                  // The LMS did not set the appropriate Error Code
+                  lmsRTEApplet.setApiConformant(false);
+                  logMsg += ".  Expected Error code 301 (Not Initialized)";
+                  writeLogEntry(_FAILED, logMsg);
+               }
+               else
+               {
+                  // The LMS handle the call appropriately
+                  logMsg += " as expected";
+                  writeLogEntry(_PASSED, logMsg);
+               }
+            }
+            else if(result == "true")
+            {
+               // The LMS did not return the expected value
+               lmsRTEApplet.setApiConformant(false);
+               logMsg += ".  Should not have succeeded.";
+               writeLogEntry(_FAILED, logMsg);
+
+            }
+         }
+      //
+      // ****************************************************************
+
+      // ****************************************************************
+      // Call LMSGetValue to determine if it returns the correct error code
+      // - noting that LMSInitialize has not been called yet...
+      //
+      // The expected results is that the LMS will return an empty string and
+      // set the API Error Code to 301 - Not initialized
+      //
+         writeLogEntry(_INFO, "Calling LMSGetValue(&quot;cmi.core.student_id&quot;) - (prior to calling LMSInitialize)");
+
+         // Attempt to make the LMSGetValue() call before the LMSInitialize()
+         result = apiHandle.LMSGetValue("cmi.core.student_id");
+
+         // Check to make sure the LMS returned the appropriate value
+         if(result != "")
+         {
+            // The LMS did not return the appropriate value
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, "LMSGetValue returned &quot;"+result+"&quot;, expected empty string return value (&quot;&quot;)");
+         }
+         else
+         {
+            // The LMS returned the appropriate value
+            // Check to make sure the LMS set the appropriate error code
+            var errorCode = apiHandle.LMSGetLastError();
+            var errorDesc = apiHandle.LMSGetErrorString(errorCode);
+            logMsg = "LMSGetValue returned &quot;"+result+"&quot; and set the API Error Code to &quot;";
+            logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+            // Check the error code
+            if(errorCode != _NotInitialized)
+            {
+               // The LMS did not set the appropriate error code
+               lmsRTEApplet.setApiConformant(false);
+               logMsg += ".  Expected Error code 301 (Not Initialized)";
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else
+            {
+               // The LMS set the appropriate error code
+               logMsg += " as expected";
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+      //
+      // *****************************************************************
+
+      // *****************************************************************
+      // Call LMSCommit to determine if it returns the correct error code
+      // - noting that LMSInitialize has not been called yet...
+      //
+      // The expected results is that the LMS will return "false" and
+      // set the API Error Code to 301 - Not initialized
+      //
+         writeLogEntry(_INFO, "Calling LMSCommit(&quot;&quot;) - (prior to calling LMSInitialize)");
+
+         // Attempt to make the call to LMSCommit() before LMSInitialize()
+         result = apiHandle.LMSCommit("");
+
+         // Check to make sure that LMS returned the appropriate value
+         if(result != "true" && result != "false")
+         {
+            // It appears that the LMS did not return the appropriate value
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, "LMSCommit returned &quot;"+result+"&quot;, expected return value  &quot;false&quot;");
+         }
+         else
+         {
+            // It appears that the LMS returned the correct value
+            // Check to make sure the LMS set the appropriate error code
+            var errorCode = apiHandle.LMSGetLastError();
+            var errorDesc = apiHandle.LMSGetErrorString(errorCode);
+            logMsg = "LMSCommit returned &quot;"+result+"&quot; and set the API Error Code to &quot;";
+            logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+            // Check to make sure the LMS returned the expected value
+            if(result == "false")
+            {
+               // Check to make sure the LMS set the appropriate error code
+               if(errorCode != _NotInitialized)
+               {
+                  // LMS did not set the appropriate error code
+                  lmsRTEApplet.setApiConformant(false);
+                  logMsg += ".  Expected Error code 301 (Not Initialized)";
+                  writeLogEntry(_FAILED, logMsg);
+               }
+               else
+               {
+                  // LMS set the appropriate error code
+                  logMsg += " as expected";
+                  writeLogEntry(_PASSED, logMsg);
+               }
+            }
+            else if(result == "true")
+            {
+               // LMS did not return the expected value
+               lmsRTEApplet.setApiConformant(false);
+               logMsg += ".  Should not have succeeded.";
+               writeLogEntry(_FAILED, logMsg);
+
+            }
+         }
+      //
+      // *****************************************************************
+
+      // *****************************************************************
+      // Call LMSFinish to determine if it returns the correct error code
+      // - noting that LMSInitialize has not been called yet...
+      //
+      // The expected results is that the LMS will return "false" and
+      // set the API Error Code to 301 - Not initialized
+      //
+      // Note:  There's a chance that the LMS may unload this SCO when LMSFinish
+      // is called, despite the fact that an error should be raised... if that
+      // happens, there won't be any way for this SCO to determine what
+      // happened...
+      //
+         writeLogEntry(_INFO, "Calling LMSFinish(&quot;&quot;) - (prior to calling LMSInitialize)");
+
+         // Attempt to call LMSFinish() before LMSInitialize()
+         result = apiHandle.LMSFinish("");
+
+         // Check to make sure the LMS returned the appropriate value
+         if(result != "true" && result != "false")
+         {
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, "LMSFinish returned &quot;"+result+"&quot;, expected return value  &quot;false&quot;");
+         }
+         else
+         {
+            // The LMS returned the appropriate value, check to make sure
+            // the LMS set the appropriate error code
+            var errorCode = apiHandle.LMSGetLastError();
+            var errorDesc = apiHandle.LMSGetErrorString(errorCode);
+            logMsg = "LMSFinish returned &quot;"+result+"&quot; and set the API Error Code to &quot;";
+            logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+            // Check to make sure the LMS returned the expected value
+            if(result == "false")
+            {
+               // The LMS returned the expected value, make sure the
+               // LMS set the appropriate error code
+               if(errorCode != _NotInitialized)
+               {
+                  // LMS did not set the appropriate error code
+                  lmsRTEApplet.setApiConformant(false);
+                  logMsg += ".  Expected Error code 301 (Not Initialized)";
+                  writeLogEntry(_FAILED, logMsg);
+               }
+               else
+               {
+                  // LMS set the appropriate error code
+                  logMsg += " as expected";
+                  writeLogEntry(_PASSED, logMsg);
+               }
+            }
+            else if(result == "true")
+            {
+               // LMS did not return the expected value
+               lmsRTEApplet.setApiConformant(false);
+               logMsg += ".  Should not have succeeded.";
+               writeLogEntry(_FAILED, logMsg);
+            }
+         }
+      //
+      // ***************************************************************
+
+      // ***********************************************
+      // resume normal api calls to exit from this SCO...
+      // ***********************************************
+
+      // Invoke LMSInitialize()
+      result = doLMSInitialize();
+
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // Invoke the LMSGetValue() for cmi.core.credit
+      var credit = doLMSGetValue("cmi.core.credit");
+
+      doLMSSetValue("cmi.core.lesson_status", "completed");
+      if(credit == "credit")
+      {
+         doLMSSetValue("cmi.core.score.raw", "25");
+      }
+
+      if (credit == "no-credit")
+      {
+         writeLogEntry(_WARNING, "The instructions specified that this test course should be taken for &quot;credit&quot;");
+      }
+      else if ( credit == "credit" )
+      {
+         writeLogEntry(_PASSED, "The test course is being taken for &quot;credit&quot;");
+      }
+      else
+      {
+         lmsRTEApplet.setApiConformant(false);
+         writeLogEntry(_FAILED, "cmi.core.credit must be set to either credit or no-credit");
+      }
+
+      doLMSSetValue( "cmi.core.exit", "" );
+
+      doLMSSetValue("cmi.core.session_time", "03:01:39.52");
+
+      // Set the Data Model status indicator
+      setDMStatus();
+
+      // Commit all data to the LMS
+      result = doLMSCommit();
+
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // Set the SCO status to completed
+      lmsRTEApplet.setCurrentSCOStatus("completed");
+      teststatus.innerText = "Status:  This SCO Test Completed.";
+
+      //alert("Completing testing.  Please launch the next SCO.");
+
+      var resultFinish = "";
+
+      // Invoke LMSFinish()
+      resultFinish = doLMSFinish();
+
+   }
+</script>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course I - SCO #03</title>
+</head>
+<body onload="performTest();">
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course I - SCO #03 <br />
+<br />
+<br />
+<br />
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</font>
+</div>
+<br />
+<hr color="#353889" />
+<br />
+<p>
+Please view the ADL test suite log for detailed progress and status information
+for this test.
+</p>
+<p>
+This test may take several minutes to complete. Please be patient!
+</p>
+<p>
+Depending upon the functionality of the LMS, this SCO may or may not be unloaded
+automatically upon conclusion of the testing performed by the SCO. When the SCO
+completes, the status above will change to "<strong><em>This SCO Test Completed.</em></strong>
+".  If the LMS does NOT automatically sequence SCO's, then please navigate to
+the next SCO manually when this status is displayed.
+</p>
+<p>
+This Sharable Content Object (SCO) tests the Learning Management System for
+conformance with the Runtime Environment Guidelines as described in the SCORM.
+The purpose of this SCO is to determine if the LMS properly handles Sharable
+Content Objects that make erroneous API Calls.  Specifically, this SCO performs
+the following:
+</p>
+<ol>
+   <ol>
+      <li>
+         Validates that this SCO was launched in the appropriate sequence (third)
+      <li>
+         Locates the LMS's API implementation
+      <li>
+         Prior to calling LMSInitialize, the LMS performs the following <em>(which should
+         result in an error being raised by the LMS)</em>:
+         <ul>
+            <li>
+               Calls LMSGetValue
+            <li>
+               CallsLMSSetValue
+            <li>
+               CallsLMSCommit
+            <li>
+               CallsLMSFinish
+            </li>
+         </ul>
+      <li>
+         If the above call to LMSFinish does not result in the SCO being unloaded by the
+         LMS, then the SCO will resume with the following:
+         <ul>
+            <li>
+               Calls LMSInitialize
+           <li>
+               Sets several datamodel elements to indicate that the SCO is complete
+            <li>
+               Calls the LMSCommit function
+            <li>
+               Calls the LMSFinish function
+            </li>
+         </ul>
+      </li>
+   </ol>
+</ol>
+<br />
+<hr color="#353889" />
+</body>
+</html>

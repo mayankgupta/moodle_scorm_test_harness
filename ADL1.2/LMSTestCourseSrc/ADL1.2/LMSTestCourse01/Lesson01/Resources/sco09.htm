@@ -1,0 +1,1089 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html>
+<!--
+/*******************************************************************************
+** Filename:  SCO09.htm
+**
+** File Description: ADL SCORM Test Course I - SCO 09 - Tests the LMS's:
+**                   Launch Conformance
+**                   Audits LMS's implementation of
+**                   cmi.interactions data model elements
+**
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+** 05/17/2001     S.Thropp          PT 874: Removed the <param name = codebase
+**                                  from the applet
+**
+** 10/30/2001     Bill Capone       Updated Filename comments
+**
+/*******************************************************************************
+-->
+<head>
+<meta http-equiv="expires" content="Tue, 20 Aug 1999 01:00:00 GMT">
+<meta http-equiv="Pragma" content="no-cache">
+<script language=JAVASCRIPT src="lmsrtefunctions.js">
+</script>
+<script language=JAVASCRIPT>
+
+
+   // Variable that holds the item that will be returned by getString()
+   var concatItem;
+
+
+   /*********************************************************************
+   **  Function Name: getType()
+   **
+   **  Description: function returns 0,1 or 2.
+   **               0 : screen w/ no (n) or (m)
+   **               1 : screen w/ (n) but no (m)
+   **               2 : screen w/ (n) and (m)
+   *********************************************************************/
+   function getType()
+   {
+      // Variable used to reference the list of data model elements
+      var listVar = window.document.elemForm.ELEMENT_LIST;
+
+      // Variable used to hold data model base category
+      var baseCategory = listVar.options[listVar.selectedIndex].value;
+
+      // Variable for the entire data model element (e.g. cmi.core._children)
+      var itemSelected = listVar.options[listVar.selectedIndex].text;
+
+      // Used to hold a user entered value instead of a selecting from the list
+      var userEnteredItem = document.elemForm.BOGUS.value;
+
+      // Variable to use to indicate the type of screen
+      //  0 - No 'm' or 'n' index text boxes
+      //  1 - 'n' index text box
+      //  2 - 'n' and 'm' text boxes
+
+      var indices;
+
+
+      if(_Debug)
+      {
+         alert("in getType() -- userEnteredItem is: " + userEnteredItem);
+      }
+
+      if(userEnteredItem != "")
+      {
+         if(_Debug)
+         {
+            alert("Something is in userEnteredItem text area");
+         }
+         // Do not display any index text boxes
+         indices = 0;
+         return indices;
+      }
+
+      if(_Debug)
+      {
+         alert("baseCategory is: "+baseCategory);
+      }
+
+      if(( baseCategory == "cmi.core" ) ||
+         ( baseCategory == "cmi.suspend_data" ) ||
+         ( baseCategory == "cmi.launch_data" ) ||
+         ( baseCategory == "cmi.comments" ) ||
+         ( baseCategory == "cmi.comments_from_lms" ) ||
+         ( baseCategory == "cmi.student_data" ) ||
+         ( baseCategory == "cmi.student_preference" ))
+      {
+
+         // These items do not need an array index for either (n) or (m)
+         indices = 0;
+      }
+      else if(baseCategory == "cmi.objectives")
+      {
+         if(( itemSelected == "cmi.objectives._count" ) ||
+            ( itemSelected == "cmi.objectives._children" ))
+         {
+            // If it is a _count or _children there is no index.
+            indices = 0;
+         }
+         else
+         {
+            if(( itemSelected == "cmi.objectives.n.score._count" ) ||
+               ( itemSelected == "cmi.objectives.n.score._children" ) ||
+               ( itemSelected == "cmi.objectives.n.score.raw" ) ||
+               ( itemSelected == "cmi.objectives.n.score.min" ) ||
+               ( itemSelected == "cmi.objectives.n.score.max" ) ||
+               ( itemSelected == "cmi.objectives.n.id" ) ||
+               ( itemSelected == "cmi.objectives.n.status" ))
+            {
+               // There is 1 index number required
+               indices = 1;
+            }
+         }
+
+      }// end if item is a cmi.objective
+
+      else if(baseCategory == "cmi.interactions")
+      {
+         if(( itemSelected == "cmi.interactions._count" ) ||
+            ( itemSelected == "cmi.interactions._children" ))
+         {
+            // If it is a _count or _children there is no index.
+            indices = 0;
+         }
+         else
+         {
+            if(( itemSelected == "cmi.interactions.n.objectives.m.id" ) ||
+               ( itemSelected == "cmi.interactions.n.correct_responses.m.pattern" ))
+            {
+               // There are 2 index numbers required
+               indices = 2;
+            }
+            else
+            {
+               // all other cmi.interactions require 1 index
+               // There is 1 index number required
+               indices = 1;
+            }
+         }
+      }
+      else
+      {
+         // There are no index numbers required
+         indices=0;
+      }
+
+      return indices;
+
+   }
+
+
+   /***************************************************************
+   **  Function Name: buildItem
+   **
+   **  Description: Function builds a string to be used in LMSSet
+   **               and LMSGet method calls
+   **************************************************************/
+   function buildItem(itemToSplit)
+   {
+      // Get the index numbers
+      var valueOfN = elemForm.GET_N.value;
+      var valueOfM = elemForm.GET_M.value;
+
+      // Variable that contains a control characer to parse around
+      separator = '.';
+
+      // Array that holds each part of the data model element
+      tempArray = itemToSplit.split( separator )
+
+      // Keeps track of the position of any 'n' indeces
+      indexN = 0;
+
+      // Keeps track of the position of any 'm' indeces
+      indexM = 0;
+
+      // size will be the index of the last element in "tempArray"
+      size = tempArray.length;
+
+      // go through array and find 'n' or 'm' index value
+      for(i = 0; i < size; i++)
+      {
+         if(tempArray[i] == 'n')
+         {
+            indexN = i;
+         }
+         else if(tempArray[i] == 'm')
+         {
+            indexM = i;
+         }
+      }
+
+
+      // if there is an index for n or m, replace with user inputted value
+      if(indexN != 0)
+      {
+         tempArray[indexN] = valueOfN;
+      }
+
+      if(indexM != 0)
+      {
+         tempArray[indexM] = valueOfM;
+      }
+
+
+
+      // makes the item to be used for LMS method calls
+      concatItem = "cmi.";
+      for(i = 1; i < size; i++)
+      {
+         concatItem += tempArray[i];
+         if(i < size - 1)
+         {
+            concatItem += separator;
+         }
+      }
+
+   }// ends build item
+
+
+   /********************************************************************
+   **  Function Name: verifyForm
+   **
+   **  Description: Function checks chosen item to see of a 'n' value
+   **               is needed. Function then calls appropriate function
+   **               to complete the LMSGet.  typeOfRequest is either 0 (get) or
+   **               1 (set)
+   ********************************************************************/
+   function verifyForm( typeOfRequest )
+   {
+
+      if(_Debug)
+      {
+         alert("In verifyForm: typeOfRequest is : "+typeOfRequest);
+      }
+
+      //  Variable to use to indicate the type of checking needed
+      //  0 - no (n) or (m) should be supplied
+      //  1 - only an (n) should be supplied
+      //  2 - an (n) AND (m) should be supplied
+      var typeOfCheck;
+
+
+      // This "if" deals with any data that is not present in the option list
+      if(document.elemForm.BOGUS.value != "")  //This will override anything else selected
+      {
+         if(_Debug)
+         {
+            alert("In verifyForm: item is user entered");
+         }
+
+         // No 'm' or 'n' index numbers required
+         typeOfCheck = 0;
+
+      }
+      else
+      {
+         typeOfCheck = getType();
+
+         if(_Debug)
+         {
+            alert("in verifyForm -- typeOfCheck is: "+typeOfCheck);
+         }
+      }
+
+      // Call index check to determine whether the correct fields are filled in
+      // Return wether or not the text boxes are filled out correctly
+      var idCheck = indexCheck(typeOfCheck, typeOfRequest);
+
+      return idCheck;
+   }
+
+
+
+   /***************************************************************************
+   **  Function Name: IndexCheck
+   **
+   **  Description: Function makes sure that all appropriate inputs (n,m,value)
+   **               are filled,and calls buildItem() to put together the
+   **               appropriate data element.  If typeOfRequest == 1 then
+   **               "Set" else "Get"
+   ***************************************************************************/
+   function indexCheck( typeOfCheck, typeOfRequest )
+   {
+      // Variable to reference the element list
+      var listVar = document.elemForm.ELEMENT_LIST;
+
+      // Holds the cmi base category
+      var baseCategory = listVar.options[listVar.selectedIndex].value;
+
+      // Holds the entire data model element
+      var itemSelected = listVar.options[listVar.selectedIndex].text;
+
+      // Holds any user ented data elements
+      //var userEnteredItem = document.elemForm.bogus.value;
+
+      var result = true;
+
+      // Value to be set in a LMSSetValue() call
+      var setValue;
+
+      // If its a LMSSetValue() request
+      if(typeOfRequest == 1)
+      {
+         // "setValue" is set to the user entered value
+         setValue = document.elemForm.SET_VAL.value;
+      }
+
+      // If there should be no index values
+      if(typeOfCheck == 0)
+      {
+         var valueOfN = document.elemForm.GET_N.value;
+         var valueOfM = document.elemForm.GET_M.value;
+
+         // If there are no values in the 'n' and 'm' text boxes then
+         // the result is true
+         if(( valueOfN == "" ) &&
+            ( valueOfM == "" ))
+         {
+            result = true;
+            buildItem( itemSelected );
+         }
+         else
+         {
+            // There are values in the 'n' and 'm' text boxes
+            result = false;
+
+            // Warn user of invalid input
+            alert( "No (n) or (m) value permitted" );
+         }
+      }
+      else if(typeOfCheck == 1)
+      {
+         // An 'n' index value is required
+
+         var valueOfN = document.elemForm.GET_N.value;
+         var valueOfM = document.elemForm.GET_M.value;
+
+         if(( valueOfN != "" ) &&
+            ( valueOfM == "" ))
+         {
+            // There is an 'n' value but no 'm' value
+            result = true;
+            buildItem ( itemSelected );
+         }
+         else
+         {
+            // The form is incorrect
+            result = false;
+
+            // Warn user of invalid input
+            alert("A Value for list index (n) is required");
+         }
+
+      } // ends else of Type of check = 1
+
+      // else Type of check = 2
+      else
+      {
+         // A 'n' and 'm' value is required
+
+         var valueOfN = document.elemForm.GET_N.value;
+         var valueOfM = document.elemForm.GET_M.value;
+
+         if(( valueOfN == "" ) || ( valueOfM == "" ))
+         {
+            // One or more of the index values is blank
+            result = false;
+
+            // Warn user of invalid input
+            alert("A Value for both (n) and (m) must be provided");
+         }
+         else
+         {
+            // else form is valid for a type of check #2
+            result = true;
+            buildItem( itemSelected );
+         }
+
+      }
+
+      // Resets the (n) and (m) boxes on the menu screen
+      //document.elemForm.GET_N.value = "";
+      //document.elemForm.GET_M.value = "";
+
+      return result;
+   }
+
+   /**************************************************************
+   **  Function Name: getItem()
+   **
+   **  Description: Function will return a valid item for a LMSSet
+   **               or LMSGet call
+   ***************************************************************/
+   function getItem()
+   {
+      return concatItem;
+   }
+
+
+
+   /**************************************************************
+   **  Function Name: endTest()
+   **
+   **  Description:  Function ends the current test and displays
+   **                a whether or not the test was run-time
+   **                conformant
+   **************************************************************/
+   function endTest()
+   {
+      if(scoStatus != "completed")
+      {
+         var msg = "LMSFinish has not been successfully completed for this SCO.\n";
+         msg+= "Click OK to continue ending the test.\n";
+         msg+= "Click Cancel to continue the test.";
+         if(confirm(msg))
+         {
+            terminateTest();
+         }
+      }
+      else
+      {
+
+         lmsRTEApplet.setCurrentSCOStatus("completed");
+         teststatus.innerText = "Status:  This SCO Test Completed.";
+      }
+   }
+
+   function tryLMSInitialize()
+   {
+      var result = doLMSInitialize();
+
+      var msg;
+
+      if(result == "true")
+      {
+         msg = "LMSInitialize Successful!";
+      }
+      else
+      {
+         var err = doLMSGetLastError();
+         var errString = doLMSGetErrorString(err);
+         msg = "LMSInitialize Failed! Error Code: "+err;
+         msg += " Error Description: " + errString;
+      }
+      initForm.msgtxt.value= msg;
+   }
+
+
+   function tryLMSCommit()
+   {
+      var result = doLMSCommit();
+
+      var msg;
+
+      if(result == "true")
+      {
+         msg = "LMSCommit was Successful!";
+      }
+      else
+      {
+         var err = doLMSGetLastError();
+         var errString = doLMSGetErrorString(err);
+         var msg = "LMSCommit Failed! Error Code: "+err;
+         msg += " Error Description: " + errString;
+
+      }
+      otherForm.msgtxt.value = msg;
+   }
+
+
+   function tryLMSFinish()
+   {
+      // set now, in case the SCO is unloaded on LMSFinish
+      lmsRTEApplet.setCurrentSCOStatus("completed");
+
+      doLMSSetValue("cmi.core.lesson_status", "completed");
+      doLMSSetValue("cmi.core.exit", "");
+      doLMSSetValue("cmi.core.session_time", "00:00:30");
+
+      var result = doLMSFinish();
+
+      var msg;
+
+      if(result == "true")
+      {
+         setDMStatus();
+         msg = "LMSFinish Successful!";
+         otherForm.msgtxt.value = msg;
+         endTest();
+
+      }
+      else
+      {
+         // set SCO status back to incomplete if LMSFinish failed
+
+         lmsRTEApplet.setCurrentSCOStatus("incomplete");
+
+
+         var err = doLMSGetLastError();
+         var errString = doLMSGetErrorString(err);
+         var msg = "LMSFinish Failed! Error Code: "+err;
+         msg += " Error Description: " + errString;
+
+         otherForm.msgtxt.value = msg;
+      }
+
+   }
+
+
+   /***************************************************************
+   **  Function Name: tryLMSGetValue
+   **
+   **  Description: Function calls LMSGetValue() on data inputted
+   **               on a HTML page
+   ***************************************************************/
+   function tryLMSGetValue()
+   {
+
+      if(verifyForm(0))
+      {
+         var value = getItem();
+         var userEnteredItem = elemForm.BOGUS.value;
+         if(userEnteredItem != "")
+         {
+            value = userEnteredItem;
+         }
+
+         var msg;
+         var result = doLMSGetValue(value);
+
+         var err = doLMSGetLastError();
+         var errString = doLMSGetErrorString(err);
+         var expectedErrorValue = document.elemForm.EXPECTED_ERR.value;
+         var expectedReturnValue = document.elemForm.EXPECTED_RETURN.value;
+
+         // Split comma separted list
+         var errorValueArray = expectedErrorValue.split(",");
+         var arrayLength = errorValueArray.length;
+
+         var passed = false;
+         for( i = 0; i < arrayLength; i++)
+         {
+            if(stripWhitespace(errorValueArray[i]) == err)
+            {
+               passed = true;
+               break;
+            }
+         }
+
+         if(( passed == true ) &&
+           (stripWhitespace(result) != stripWhitespace(expectedReturnValue)))
+         {
+            passed = false;
+         }
+
+         if( passed == true )
+         {
+            if(err == _NoError)
+            {
+               msg = "LMSGetValue Succeeded.  Returned: " + result;
+            }
+            else if(err != _NoError)
+            {
+               msg = "LMSGetValue set Expected Error Code: " + err;
+               msg += ". Error Description: " + errString;
+            }
+         }
+         else
+         {
+            msg = "LMSGetValue Failed! Error Code: "+err;
+            msg += " Error Description: " + errString;
+            msg += ". Expected Error Code(s): ";
+            for( i = 0; i < arrayLength; i++)
+            {
+               if ((i == arrayLength-1) && (i != 0))
+               {
+                  msg += " or " + errorValueArray[i];
+                  break;
+               }
+               else if (i == 0)
+               {
+                  msg += errorValueArray[i];
+               }
+               else
+               {
+                  msg += ", " + errorValueArray[i];
+               }
+            }
+            msg += ". LMSGetValue returned: " + result;
+            msg += " Value Expected: " + expectedReturnValue;
+            var isOptional = isOptionalDMElement(value);
+            if ( isOptional )
+            {
+               allOptional = false;
+            }
+            else
+            {
+               allMandatory = false;
+            }
+         }
+         document.elemForm.msgtxt.value = msg;
+      }
+
+   }
+
+   /***************************************************************
+   **  Function Name: tryLMSSetValue
+   **
+   **  Description: Function calls LMSSetValue() on data inputted
+   **               on a HTML page
+   ***************************************************************/
+   function tryLMSSetValue()
+   {
+      if(verifyForm(1))
+      {
+         // Get the element that is to be set
+         var setValue = document.elemForm.SET_VAL.value;
+         var item = getItem();
+         var userEnteredItem = document.elemForm.BOGUS.value;
+         var logMsg =  "LMSSetValue(" +item+ ", &quot;"+ setValue+"&quot;)";
+         if(userEnteredItem != "")
+         {
+            item = userEnteredItem;
+         }
+
+         var msg;
+
+         var api = getAPIHandle();
+         if (api == null)
+         {
+            alert("Unable to locate the LMS's API Implementation.\n"+
+                  "LMSSetValue was not successful.");
+            return false;
+         }
+
+         // Try to set the element
+         var result = api.LMSSetValue( item, setValue );
+
+         var err = doLMSGetLastError();
+         var errString = doLMSGetErrorString(err);
+         var expectedErrorValue = document.elemForm.EXPECTED_ERR.value;
+         var expectedReturnValue = document.elemForm.EXPECTED_RETURN.value;
+
+         // Split comma separted list
+         var errorValueArray = expectedErrorValue.split(",");
+         var arrayLength = errorValueArray.length;
+
+         var passed = false;
+         for( i = 0; i < arrayLength; i++)
+         {
+            if(stripWhitespace(errorValueArray[i]) == err)
+            {
+               passed = true;
+               break;
+            }
+         }
+
+         if(( passed == true ) &&
+            (stripWhitespace(result) != stripWhitespace(expectedReturnValue)))
+         {
+            passed = false;
+         }
+
+         if( passed == true )
+         {
+            if(err == _NoError)
+            {
+               msg = "LMSSetValue Succeeded.";
+               logMsg += " succeeded";
+            }
+            else if(err != _NoError)
+            {
+               msg = "LMSSetValue set Expected Error Code: " + err;
+               logMsg += " set Expected Error Code: " + err;
+               msg += ". Error Description: " + errString;
+               logMsg += ". Error Description: " + errString;
+            }
+            writeLogEntry(_PASSED, logMsg);
+         }
+         else
+         {
+            msg = "LMSSetValue Failed! Error Code: " + err;
+            logMsg += " resulted in the following error: &quot;"+err+"&quot; ";
+            msg += " Error Description: " + errString;
+            msg += ". Expected Error Code(s): ";
+            logMsg += errString + ". Expected Error Code(s): ";
+            for( i = 0; i < arrayLength; i++)
+            {
+               if ((i == arrayLength-1) && (i != 0))
+               {
+                  msg += " or " + errorValueArray[i];
+                  logMsg += " or " + errorValueArray[i];
+                  break;
+               }
+               else if (i == 0)
+               {
+                  msg += errorValueArray[i];
+                  logMsg += errorValueArray[i];
+               }
+               else
+               {
+                  msg += ", " + errorValueArray[i];
+                  logMsg += ", " + errorValueArray[i];
+               }
+            }
+            msg += ". LMSSetValue returned: " + result;
+            logMsg += ". LMSSetValue returned: " + result;
+            msg += ". Value Expected: " + expectedReturnValue;
+            logMsg += ". Value Expected: " + expectedReturnValue;
+            var isOptional = isOptionalDMElement(item);
+            if ( isOptional )
+            {
+               allOptional = false;
+            }
+            else
+            {
+               allMandatory = false;
+            }
+            writeLogEntry(_FAILED, logMsg);
+         }
+
+         document.elemForm.msgtxt.value = msg;
+
+      }
+   }
+
+   function tryLMSGetLastError()
+   {
+
+      var err = doLMSGetLastError();
+
+      writeLogEntry(_PASSED, "LMSGetLastError returned: " + err);
+
+      document.otherForm.msgtxt.value = "LMSGetLastError returned Error Code:  " + err;
+   }
+
+   function tryLMSGetErrorString()
+   {
+      var err = doLMSGetLastError();
+      var errString = doLMSGetErrorString(err);
+
+      writeLogEntry(_PASSED, "LMSGetErrorString returned: <I>" + errString + "</I>");
+
+      document.otherForm.msgtxt.value = "LMSGetErrorString returned:  " + errString;
+   }
+
+   function tryLMSGetDiagnostic()
+   {
+      var err = doLMSGetLastError();
+      var diagnostic = doLMSGetDiagnostic(err);
+
+
+      writeLogEntry(_PASSED, "LMSGetDiagnostic returned: <I>" + diagnostic + "</I>");
+
+      document.otherForm.msgtxt.value = "LMSGetDiagnostic returned:  " + diagnostic;
+   }
+
+
+
+
+   function startTest()
+   {
+      testLaunch(1,9);
+
+      setAPIHandle(null);
+   }
+
+
+   /*************************************************************
+   **  Function Name: buildScreen()
+   **
+   **  Description: This function determines which text boxes
+   **               should be displayed on the page.  The boxes
+   **               in question are:
+   **               * 'n' index
+   **               * 'm' index
+   **************************************************************/
+   function buildScreen()
+   {
+      // Get the type of screen:
+      //  0 - no 'm' or 'n'
+      //  1 - 'n' but no 'm'
+      //  2 - 'n' and 'm'
+
+      // clear the user entered element field
+      elemForm.BOGUS.value = "";
+
+      var screenType = getType();
+
+      if(_Debug)
+      {
+         alert("Screen Type: " + screenType);
+      }
+
+      // Resets the (n) and (m) boxes on the menu screen
+      document.elemForm.GET_N.value = "";
+      document.elemForm.GET_M.value = "";
+
+      // If there is no (m) or (n)
+      if(screenType == 0)
+      {
+         // Hide the 'n' and 'm' index boxes
+         nDiv.style.visibility = "hidden";
+         mDiv.style.visibility = "hidden";
+
+      }
+      else if(screenType == 1)
+      {
+         // Show the 'n' index box, hide the 'm' index box
+         nDiv.style.visibility = "visible";
+         mDiv.style.visibility = "hidden";
+      }
+      else //screenType == 2
+      {
+         // Show the 'n' and 'm' boxes
+         nDiv.style.visibility = "visible";
+         mDiv.style.visibility = "visible";
+
+      }//ends if screen type 0,1,2
+
+   }//end buildScreen()
+
+</script>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course I - SCO #09</title>
+</head>
+
+<body onload="startTest();">
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+   codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+   height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course I - SCO #09<br />
+<br>
+<br>
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</font>
+</div>
+<br>
+<hr color="#353889">
+<br>
+<p>
+Please view the ADL test suite log for detailed progress and status information
+for this test.
+</p>
+
+<p>
+The purpose of this SCO is to allow the operator to perform testing of the LMS
+API Implementation in an ad-hoc fashion.  This provides an opportunity to
+extend the testing of the API and Datamodel portions of the Learning Management
+System's runtime environment implementation and to diagnose anomolies that may
+have been discovered during previous SCOs.
+</p>
+
+<p>
+<strong>IMPORTANT NOTE:  </strong>Non-conformant calls to the LMS may be issued
+from this SCO.  The user is responsible for entering in the Expected Error Code
+to be generated as well as the value to be returned from either the LMSGetValue
+or LMSSetValue call.  Failure to input the correct error code and correct return
+value can affect your conformance designation.
+</p>
+
+<p>
+If the user invokes LMSFinish in the appropriate sequence, then depending upon
+the functionality of the LMS, this SCO may or may not be unloaded automatically
+upon conclusion of the testing performed by the SCO. When the SCO completes, the
+status above will change to "<strong><em>This SCO Test Completed.</em></strong>
+".  If the LMS does NOT automatically sequence SCOs, then please exit the Test
+Course when this status is displayed.
+
+</p>
+<hr color="#353889" />
+<br />
+
+<form name="initForm">
+   <h3>LMSInitialize()</h3>
+   <table width="90%" border="0">
+      <tr>
+         <td>
+
+            <input type = "button" value = "Call LMSInitialize()"
+                         onclick = "tryLMSInitialize();" id=Initialize
+                         name=Initialize /></td>
+         <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+         <td>
+
+            <label>Result</label><br />
+            <textarea name="msgtxt" id="msgtxt" rows="2" cols="40%" wrap="VIRTUAL" readonly>NotCalled
+            </textarea></td>
+      </tr>
+   </table>
+</form>
+<hr color="#353889" />
+
+<form name="elemForm" id="elemForm">
+
+   <h3>LMSGetValue() and LMSSetValue()</h3>
+   <table width="90%" border="0">
+      <tr>
+         <td><b>1a. Select Data Model Element to Get or Set</b> &nbsp;&nbsp;&nbsp;&nbsp;
+            <select name = "ELEMENT_LIST" id="ELEMENT_LIST" onchange="buildScreen()">
+               <option value="NONE">--None Selected--</option> <option value="">******************************************</option>
+               <option value="cmi.core">cmi.core._children</option> <option value="cmi.core">cmi.core.student_id</option>
+               <option value="cmi.core">cmi.core.student_name</option> <option value="cmi.core">cmi.core.lesson_location</option>
+               <option value="cmi.core">cmi.core.credit</option> <option value="cmi.core">cmi.core.lesson_status</option>
+               <option value="cmi.core">cmi.core.entry</option> <option value="cmi.core">cmi.core.score._children</option>
+               <option value="cmi.core">cmi.core.score.raw</option> <option value="cmi.core">cmi.core.score.max</option>
+               <option value="cmi.core">cmi.core.score.min</option> <option value="cmi.core">cmi.core.total_time</option>
+               <option value="cmi.core">cmi.core.lesson_mode</option> <option value="cmi.core">cmi.core.exit</option>
+               <option value="cmi.core">cmi.core.session_time</option> <option value="">******************************************</option>
+               <option value="cmi.suspend_data">cmi.suspend_data</option> <option value="">******************************************</option>
+               <option value="cmi.launch_data">cmi.launch_data</option> <option value="">******************************************</option>
+               <option value="cmi.comments">cmi.comments</option> <option value="">******************************************</option>
+               <option value="cmi.comments">cmi.comments_from_lms</option> <option value="">******************************************</option>
+               <option value="cmi.objectives">cmi.objectives._count</option> <option value="cmi.objectives">cmi.objectives._children</option>
+               <option value="cmi.objectives">cmi.objectives.n.id</option> <option value="cmi.objectives">cmi.objectives.n.score._children</option>
+               <option value="cmi.objectives">cmi.objectives.n.score.raw</option> <option value="cmi.objectives">cmi.objectives.n.score.min</option>
+               <option value="cmi.objectives">cmi.objectives.n.score.max</option> <option value="cmi.objectives">cmi.objectives.n.status</option>
+               <option value="">******************************************</option> <option value="cmi.student_data">cmi.student_data._children</option>
+               <option value="cmi.student_data">cmi.student_data.mastery_score</option> <option value="cmi.student_data">cmi.student_data.max_time_allowed</option>
+               <option value="cmi.student_data">cmi.student_data.time_limit_action</option> <option value="">******************************************</option>
+               <option value="cmi.student_preference">cmi.student_preference._children</option> <option value="cmi.student_preference">cmi.student_preference.audio</option>
+               <option value="cmi.student_preference">cmi.student_preference.language</option> <option value="cmi.student_preference">cmi.student_preference.speed</option>
+               <option value="cmi.student_preference">cmi.student_preference.text</option> <option value="">******************************************</option>
+               <option value="cmi.interactions">cmi.interactions._children</option> <option value="cmi.interactions">cmi.interactions._count</option>
+               <option value="cmi.interactions">cmi.interactions.n.id</option> <option value="cmi.interactions">cmi.interactions.n.objectives._count</option>
+               <option value="cmi.interactions">cmi.interactions.n.objectives.m.id</option> <option value="cmi.interactions">cmi.interactions.n.time</option>
+               <option value="cmi.interactions">cmi.interactions.n.type</option> <option value="cmi.interactions">cmi.interactions.n.correct_responses._count</option>
+               <option value="cmi.interactions">cmi.interactions.n.correct_responses.m.pattern</option>
+               <option value="cmi.interactions">cmi.interactions.n.weighting</option> <option value="cmi.interactions">cmi.interactions.n.student_response</option>
+               <option value="cmi.interactions">cmi.interactions.n.result</option> <option value="cmi.interactions">cmi.interactions.n.latency</option>
+            </select>
+            <br />
+            <br />
+            <b>--- OR --- </b> <br />
+            <br />
+            <label><b>1b. Enter your own Non-standard Data Model Element Name</b></label> &nbsp;
+            &nbsp;&nbsp;&nbsp; <input type="text" name="BOGUS" id="BOGUS" size="25"><br />
+            <br />
+
+            <label><b>2.  Enter value to Set or Get</b></label>&nbsp;&nbsp;&nbsp;&nbsp; <input type="text" name="SET_VAL" id="SET_VAL" size="25">
+            <br />
+            <br />
+            <div id="nDiv" name="nDiv" style="visibility:hidden">
+
+               <label>2a. List Index (N) Value</label> <input type="text" name="GET_N" id="GET_N" size="4">
+
+            </div>
+            <br />
+            <div id="mDiv" name="mDiv" style="visibility:hidden">
+
+               <label>2b. List Index (M) Value</label> <input type="text" name="GET_M" id="GET_M" size="4">
+
+            </div>
+            <br />
+            <br />
+            <label><b>3.  Enter Expected Error Code</b></label>&nbsp;&nbsp;&nbsp;&nbsp; <input type="text" name="EXPECTED_ERR" id="EXPECTED_ERR" size="4" value="0">
+               If entering more than one error code, use a comma seperated list.
+            <br />
+            <br />
+
+            <label><b>4.  Enter Expected Return Value</b></label>&nbsp;&nbsp;&nbsp;&nbsp; <input type="text" name="EXPECTED_RETURN" id="EXPECTED_RETURN" size="25">
+            <br />
+            <br />
+
+            <label><b>5. Select API Function to Call</b></label> &nbsp;&nbsp;&nbsp;&nbsp; <input type = "button" value = "Call LMSGetValue()"
+                         onclick = "tryLMSGetValue()" id=lmsGetButton
+                         name=lmsGetButton>&nbsp;&nbsp;-- OR --&nbsp;&nbsp;
+
+            <input type = "button" value = "Call LMSSetValue()"
+                          onclick = "tryLMSSetValue()" id=lmsSetButton
+                          name=lmsSetButton>
+
+
+            <br />
+            <br />
+
+            <label>Result</label><br />
+            <textarea name="msgtxt" id="msgtxt" rows="2" cols="40%" wrap="VIRTUAL" readonly>None</textarea>
+
+
+         </td>
+      </tr>
+   </table>
+</form>
+<hr color="#353889" />
+
+<form name="otherForm">
+
+   <h3>Additional API Functions</h3>
+   <table width="90%" border="0">
+      <tr>
+         <td><input type="button"
+             value=" Call LMSGetLastError()  "
+             onclick = "tryLMSGetLastError();"
+             id=lastErrorButton
+             name=lastErrorButton><br />
+            <br />
+            <input type="button"
+             value=" Call LMSGetErrorString()  "
+             onclick = "tryLMSGetErrorString();"
+             id=getErrorStringButton
+             name=getErrorStringButton><br />
+            <br />
+            <input type="button"
+             value=" Call LMSGetDiagnostic()  "
+             onclick = "tryLMSGetDiagnostic();"
+             id=getDiagnosticButton
+             name=getDiagnosticButton><br />
+            <br />
+            <input type="button"
+             value=" Call LMSCommit()  "
+             onclick = "tryLMSCommit();"
+             id=commitButton
+             name=commitButton><br />
+            <br>
+
+            <input type="button"
+             value=" Call LMSFinish()  "
+             onclick = "tryLMSFinish();"
+             id=finishButton
+             name=finishButton>
+
+         </td>
+
+         <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+         <td><label>Result</label><br />
+            <textarea name="msgtxt" id="msgtxt" rows="2" cols="40%" wrap="VIRTUAL" readonly>None</textarea></td>
+      </tr>
+   </table>
+</form>
+</body>
+</html>

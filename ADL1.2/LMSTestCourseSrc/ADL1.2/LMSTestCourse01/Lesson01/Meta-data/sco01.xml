@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+
+<lom xmlns="http://www.imsglobal.org/xsd/imsmd_rootv1p2p1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+     xsi:schemaLocation="http://www.imsglobal.org/xsd/imsmd_rootv1p2p1 imsmd_rootv1p2p1.xsd">
+
+   <general>
+      <title>
+         <langstring>
+            ADL LMS Run-time Environment Conformance Testing SCO 01
+         </langstring>
+      </title>
+      <catalogentry>
+         <catalog>ADL Sample Courses Catalog</catalog>
+         <entry>
+            <langstring>C01.L01.S01</langstring>
+         </entry>
+      </catalogentry>
+      <language>en-US</language>
+      <description>
+         <langstring>
+            ADL SCORM Test Course 01 - SCO 01 - Tests the LMS's: 
+               Launch Conformance
+               API implementation Conformance
+               Mandatory Data Model Element Conformance
+         </langstring>
+      </description>
+      <keyword>
+         <langstring>SCORM</langstring>
+      </keyword>
+      <keyword>
+         <langstring>LMS</langstring>
+      </keyword>
+      <keyword>
+         <langstring>Run-time Environment</langstring>
+      </keyword>
+      <keyword>
+         <langstring>API</langstring>
+      </keyword>
+      <keyword>
+         <langstring>Launch</langstring>
+      </keyword>
+      <keyword>
+         <langstring>Data Model</langstring>
+      </keyword>
+      <aggregationlevel>
+         <source>
+            <langstring xml:lang="x-none">LOMv1.0</langstring>
+         </source>
+         <value>
+            <langstring xml:lang="x-none">1</langstring>
+         </value>
+      </aggregationlevel>
+   </general>
+   
+   <lifecycle>
+      <version>
+         <langstring>1.1</langstring>
+      </version>
+      <status>
+         <source>
+            <langstring xml:lang="x-none">LOMv1.0</langstring>
+         </source>
+         <value>
+            <langstring xml:lang="x-none">Final</langstring>
+         </value>
+      </status>
+      <contribute>
+         <role>
+            <source>
+               <langstring xml:lang="x-none">LOMv1.0</langstring>
+            </source>
+            <value>
+               <langstring xml:lang="x-none">Author</langstring>
+            </value>
+         </role>
+         <centity>
+            <vcard>
+BEGIN:vCard 
+ORG:ADL Technical Team 
+END:vCard
+            </vcard>
+         </centity>
+         <date>
+            <datetime>2001-04-13</datetime>
+         </date>
+      </contribute>
+   </lifecycle>
+   
+   <metametadata>
+      <metadatascheme>ADL SCORM(TM) 1.2</metadatascheme>
+   </metametadata>
+   
+   <technical>
+      <format>text/html</format>
+      <size>26737</size>
+      <location type="URI">Lesson01\Resources\sco01.htm</location>
+      <requirement>
+         <type>
+            <source>
+               <langstring xml:lang="x-none">LOMv1.0</langstring>
+            </source>
+            <value>
+               <langstring xml:lang="x-none">Browser</langstring>
+            </value>
+         </type>
+         <name>
+            <source>
+               <langstring xml:lang="x-none">LOMv1.0</langstring>
+            </source>
+            <value>
+               <langstring xml:lang="x-none">Microsoft Internet Explorer</langstring>
+            </value>
+         </name>
+         <minimumversion>5.0</minimumversion>
+      </requirement>
+   </technical>
+   
+   <educational>
+      <learningresourcetype>
+         <source>
+            <langstring xml:lang="x-none">LOMv1.0</langstring>
+         </source>
+         <value>
+            <langstring xml:lang="x-none">Narrative Text</langstring>
+         </value>
+      </learningresourcetype>
+      <typicallearningtime>
+         <datetime>00:02:00</datetime>
+      </typicallearningtime>
+   </educational>
+   
+   <rights>
+      <cost>
+         <source>
+            <langstring xml:lang="x-none">LOMv1.0</langstring>
+         </source>
+         <value>
+            <langstring xml:lang="x-none">no</langstring>
+         </value>
+      </cost>
+      <copyrightandotherrestrictions>
+         <source>
+            <langstring xml:lang="x-none">LOMv1.0</langstring>
+         </source>
+         <value>
+            <langstring xml:lang="x-none">no</langstring>
+         </value>
+      </copyrightandotherrestrictions>
+   </rights>
+   
+   <classification>
+      <purpose>
+         <source>
+            <langstring xml:lang="x-none">LOMv1.0</langstring>
+         </source>
+         <value>
+            <langstring xml:lang="x-none">Discipline</langstring>
+         </value>
+      </purpose>
+      <description>
+         <langstring>
+            ADL SCORM(TM) Version 1.2 LMS Run-time Environment Conformance test
+         </langstring>
+      </description>
+      <keyword>
+         <langstring>
+            ADL SCORM(TM) Version 1.2 LMS Run-time Environment Conformance
+         </langstring>
+      </keyword>
+      <keyword>
+         <langstring>test</langstring>
+      </keyword>
+   </classification>
+</lom>

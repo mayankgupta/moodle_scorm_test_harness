@@ -1,0 +1,1264 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html>
+<script language="JAVASCRIPT">
+window.onerror = true;
+/*******************************************************************************
+** Filename:  sco 02.htm
+**
+** File Description: ADL SCORM Test Course I - SCO 02 - Tests the LMS's:
+**                   Launch Conformance
+**                   API Error Code implementation Conformance
+**
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+** 05/17/2001     S.Thropp          PT 874: Removed the <param name = codebase
+**                                  from the applet
+**
+** 08/27/2001     J. Falls          1) Changed "can not" to "cannot".
+**                                  2) Changed LMSInitialize(), LMSCommit(),
+**                                     LMSFinish() return error code from
+**                                     "101" to "201".
+**
+** 10/30/2001     Bill Capone       Modified some if statements - updated the
+**                                  some of the errorcodes that we were checking
+**                                  for after completing calls to
+**                                  LMSGetLastError.  Also updated an incorrect
+**                                  comment.
+**
+** 11/27/2001     Jeff Falls        Fixed the error code (option: 401,201) check
+**                                  to handle a LMSSetValue on
+**                                  "cmi.objectives.9.id"
+**
+** 01/04/2002     Bill Capone       Modified many of the elements to be
+**                                  compatible with LMS Requirements 1.2. See
+**                                  Perfect Tracker 1491.
+**
+** 05/15/2002     Bill Capone       PT1976: Modified the expected return value
+**                                  for the LMSSetValue on cmi.objectives.9.id.
+**                                  Originally: Pass if 405, warn if 201 or 401.
+**                                  Changed to: Pass if 201, warn if 401.
+**
+** 06/21/2011	  Mayank Gupta	    Modified performTest function. For alert 
+**				    compatibility with Selenium WebDriver used 
+**				    in ADL 1.2 Test Script.
+**
+*******************************************************************************/
+</script>
+<head>
+<script language=JAVASCRIPT src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+<script language=JAVASCRIPT src="lmsrtefunctions.js"></script>
+<script language=JAVASCRIPT>
+
+   /****************************************************************************
+   ** Function:  performTest()
+   **
+   ** Inputs:  None
+   ** Outputs: None
+   **
+   ** Purpose: This function is the main test driver for this SCO.
+   ****************************************************************************/
+   function performTest()
+   {
+
+      if(_Debug)
+      {
+         alert("in performTest()");
+      }
+
+      scoStatus = "incomplete";
+
+      // ************************************************************
+      // Test to see if the LMS launched the SCO in the correct order
+      // ************************************************************
+      testLaunch(1, 2);
+
+      // testLaunch() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // Set up the API Handle.
+      setAPIHandle(null);
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      var result;
+      var logMsg;
+      var errorCode;
+      var errorDesc;
+
+      writeLogEntry(_INFO, "Testing API Functions");
+      writeLogEntry(_OTHER, "");
+
+
+      // ********************************************************
+      // Test LMSInitialize called with incorrect parameter
+      //
+      // The expected result is that the LMS returns "false" and
+      // sets the API Error Code to: 201 - Invalid Argument Error
+         writeLogEntry(_INFO, "Testing LMSInitialize with incorrect parameter value");
+         writeLogEntry(_OTHER, "");
+         writeLogEntry(_INFO, "Calling LMSInitialize(&quot2&quot)");
+
+         // Attempt to call LMSInitialize() with an invalid argument
+         result = apiHandle.LMSInitialize("2");
+
+         // Check the result
+         if(result != "true" && result != "false")
+         {
+            // result returned from LMSInitialize() call did not equal either
+            // "true" or "false", the LMS did not implement the LMSInitialize()
+            // API function call correctly
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, "LMSInitialize returned &quot;"+result+"&quot;," +
+                          " expected return value &quot;false&quot;");
+         }
+         else
+         {
+            // The LMS returned the correct value (either - "true" or "false"
+            // Get the Error Code and the cooresponding Error Description
+            errorCode = doLMSGetLastErrorTest();
+            errorDesc = doLMSGetErrorStringTest(errorCode);
+            logMsg = "LMSInitiailize returned &quot;"+result+"&quot; and set the";
+            logMsg +=" API Error Code to &quot;";
+            logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+            // Check to make sure the correct value was returned and report all necessary
+            // errors
+            if(result == "false")
+            {
+               // The "false" return code is the expected value, now check to make sure
+               // the LMS set the expected Error Code (201)
+               if(errorCode != _InvalidArgumentError)
+               {
+                  // LMSInitialize returned "false", but set the wrong error conde
+                  // Conformance Statement: FAILED
+                  logMsg += ".<br>Expected return value of &quot;false&quot; and";
+                  logMsg += " Error Code &quot;201&quot;.";
+                  lmsRTEApplet.setApiConformant(false);
+                  writeLogEntry(_FAILED, logMsg);
+               }
+               else
+               {
+                  // LMSInitialize returned "false" and set the appropriate error code
+                  // Conformance Statement: PASSED
+                  logMsg += " as expected.";
+                  writeLogEntry(_PASSED, logMsg);
+               }
+            }
+            else if(result == "true")
+            {
+               // LMS returned the incorrect value - "true"
+               // Conformance Statement: FAILED
+               logMsg += ".<br>Expected return value of &quot;false&quot; and ";
+               logMsg += "Error Code &quot;201&quot;.";
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+         }
+      //
+      // ***********************************************************************
+
+      // If the LMS handled the call correctly, continue the test
+      if(result == "false")
+      {
+         // If call with bad parameter failed, then try to call LMSInitialize the right way now
+         // to continue the test...
+         writeLogEntry(_INFO, "Now attempting to call LMSInitialize function correctly.");
+         result = apiHandle.LMSInitialize("");
+
+         // Check the result
+         if(result != "true" && result != "false")
+         {
+            // The result returned from LMSInitialize() call did not equal either
+            // "true" or "false", the LMS did not implement the LMSInitialize()
+            // API function call correctly
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, "LMSInitialize returned &quot;"+result+"&quot;, expected return value &quot;true&quot; or &quot;false&quot;");
+         }
+         else
+         {
+            // Get the Error Code and the corresponding Error Description
+            var errorCode = apiHandle.LMSGetLastError();
+            var errorDesc = apiHandle.LMSGetErrorString(errorCode);
+            logMsg = "LMSInitiailize returned &quot;"+result+"&quot; and set the API Error Code to &quot;";
+            logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+            // If the LMSInitialize() was handled correctly by the LMS continue
+            // processing
+            if(result == "true")
+            {
+               // Check to make sure the LMS returned No Error (Error code - 0)
+               if(errorCode != _NoError)
+               {
+                  // LMSInitialize returned true, but set a non zero error condition
+                  // Conformance Statement: FAILED
+                  lmsRTEApplet.setApiConformant(false);
+                  writeLogEntry(_FAILED, logMsg);
+               }
+               else
+               {
+                  // The LMS returned the correct value ("true") and set the
+                  // appropriate error code (0 - No Error)
+                  // Conformance Statement: PASSED
+                  writeLogEntry(_PASSED, logMsg);
+               }
+            }
+            else if(result == "false")
+            {
+               // LMS did not handle the LMSInitialize() correctly and returned
+               // "false".
+               // Conformance Statement: FAILED
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+
+               // The test can not continue if this doesn't work...
+               terminateTest();
+               return;
+            }
+         }
+      }
+
+      // *******************************************************************
+      // Test LMSInitialize - called again
+      //
+      // Test to see if the LMS can handle multiple calls to LMSInitialize()
+      // The expected result is that the LMS return "false" and set the API
+      // Error Code to 101 - General Exception
+         writeLogEntry(_INFO, "Attempting to call LMSInitialize again for this SCO");
+
+         // Call LMSInitialize() a second time
+         result = apiHandle.LMSInitialize("");
+
+         // Check the return value
+         if(result == "true")
+         {
+            // The LMS appears to accept multiple calls to the LMSInitialize()
+            // Set the API Conformance statment to false
+            // Conformance Statement: FAILED
+            lmsRTEApplet.setApiConformant(false);
+
+            logMsg = "LMSInitialize returned &quot;"+result+"&quot; when called";
+            logMsg += " twice by the same SCO. Should have returned &quot;false&quot;";
+            writeLogEntry(_FAILED, logMsg);
+         }
+
+         // The LMS appeared to handle the multiple calls to LMSInitialize() correctly
+         // Get the last error.
+         var errorCode = apiHandle.LMSGetLastError();
+
+         // Check to make sure the LMS set the appropriate error code (101 - General Exception)
+         if(errorCode != _GeneralException)
+         {
+            // LMS set the API Error Code to something other than 101 - General Exeception
+            // Conformance Statement: FAILED
+            logMsg = "LMSInitialize did not generate the expected error condition. ";
+            logMsg += " LMSGetLastError returned &quot;";
+            logMsg += errorCode;
+            logMsg += "&quot;.";
+            logMsg += " Expected value &quot;101&quot;.";
+            writeLogEntry(_FAILED, logMsg);
+            lmsRTEApplet.setApiConformant(false);
+         }
+         else
+         {
+            // LMS set the API Error Code to the correct value
+            // Conformance Statement: PASSED
+            logMsg = "LMSInitialize returned error code &quot;101&quot; ";
+            logMsg += "(General exception) as expected";
+            writeLogEntry(_PASSED, logMsg);
+         }
+
+      // ****************************************************
+      // Test LMSSetValue error conditions and return values
+      // ****************************************************
+
+      writeLogEntry(_OTHER, "");
+      writeLogEntry(_INFO, "Testing LMSSetValue return values and error conditions");
+
+
+      // ********************************************************
+      // Test LMSSetValue return value
+      // ********************************************************
+
+      writeLogEntry(_INFO, "Calling LMSSetValue(&quot;cmi.core.score.raw&quot;, &quot;10&quot;) - (valid call for mandatory data model element)");
+      result = apiHandle.LMSSetValue("cmi.core.score.raw", "10"); // this should succeed
+
+      // Test the return value from the LMSSetValue() call
+      if(result != "true" && result != "false")
+      {
+         // The result returned from LMSSetValue() call did not equal either
+         // "true" or "false", the LMS did not implement the LMSSetValue()
+         // API function call correctly
+         lmsRTEApplet.setApiConformant(false);
+         writeLogEntry(_FAILED, "LMSSetValue returned &quot;"+result+"&quot;, expected return value &quot;true&quot; or &quot;false&quot;");
+      }
+      else
+      {
+         // The LMS appears to handle the call to LMSSetValue()
+         // Get the Error Code and the corresponding Error Description
+         var errorCode = apiHandle.LMSGetLastError();
+         var errorDesc = apiHandle.LMSGetErrorString(errorCode);
+         logMsg = "LMSSetValue returned &quot;"+result+"&quot; and set the API Error Code to &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         // Determine if the LMS handled the call correctly
+         if(result == "true")
+         {
+            // LMS handle the setting of the mandatory element correctly
+            // Check the Error Code to see if it was set correctly
+            if(errorCode != _NoError)
+            {
+               // LMSSetValue returned true, but set a non zero error condition
+               // Conformance Statement: FAILED
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else
+            {
+               // LMSSetValue returned true and set the error code to 0 - No Error
+               // Conformance Statement: PASSED
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+         else if(result == "false")
+         {
+            // The LMS did not handle the LMSSetValue() of a mandatory element
+            // correctly
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+      }
+
+      // *************************************************************
+      // Test Call to LMSSetValue with invalid data model element name
+      //
+      // Test to see if the LMS can handle calls to invalid SCORM Run-Time
+      // Environment Data Model elements
+      // Expected result is for the LMS to return a "false" and set the API
+      // error code to 201 - Invalid Argument.  An error code of 401 is
+      // also acceptable but may be deprecated
+      //
+         writeLogEntry(_INFO, "Calling LMSSetValue with invalid data model element name");
+         logMsg =  "Attempting LMSSetValue(&quot;cmi.core.none&quot;, &quot;10&quot;)";
+         logMsg += " Expecting return value of &quot;false&quot; and error code ";
+         logMsg += "&quot;201&quot; (Invalid argument error) or &quot;401&quot; (Not implemented error).";
+         writeLogEntry(_INFO, logMsg);
+
+         result = apiHandle.LMSSetValue("cmi.core.none", "10");
+
+         logMsg = "LMSSetValue returned &quot;"+result+"&quot;";
+
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+
+         if(result != "false")
+         {
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            if((errorCode != _InvalidArgumentError) && (errorCode != _NotImplementedError))
+            {
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else
+            {
+               // Passed if the LMS returns what is expected
+               if ( errorCode == _InvalidArgumentError )
+               {
+                   writeLogEntry(_PASSED, logMsg);
+               }
+               else
+               {
+                  // Warning if LMS does not set the error code to the expected
+                  // error code
+                  writeLogEntry(_WARNING, logMsg);
+               }
+            }
+         }
+      //
+      // *************************************************************
+
+
+      // *************************************************************
+      // Test Call to LMSSetValue with non-writeable element
+      //
+      // Test to see if the LMS can handle LMSSetValue() calls on
+      // read-only data model elements correctly
+      // The expected result is that the LMS will return "false" and
+      // set the API error code to 403 - Element is read only.  The error
+      // code of 201 - Invalid argument error is also acceptable.
+
+         writeLogEntry(_INFO, "Calling LMSSetValue with read-only data model element");
+         logMsg =  "Attempting LMSSetValue(&quot;cmi.core.student_id&quot;, &quot;10&quot;).";
+         logMsg += " Expecting return value of &quot;false&quot; and error code ";
+         logMsg += "&quot;403&quot; (Element is read only) ";
+         logMsg += "or &quot;201&quot; (Invalid argument error).";
+         writeLogEntry(_INFO, logMsg);
+         result = apiHandle.LMSSetValue("cmi.core.student_id", "10");
+
+         logMsg = "LMSSetValue returned &quot;"+result+"&quot;";
+
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+
+         if(result != "false")
+         {
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            if((errorCode != _ElementIsReadOnly) &&
+               (errorCode != _InvalidArgumentError))
+            {
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else if(errorCode == _InvalidArgumentError)
+            {
+               logMsg += " In the future, the use of error code &quot;201&quot;";
+               logMsg += " in this situation, may be deprecated.";
+               writeLogEntry(_WARNING, logMsg);
+            }
+            else
+            {
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+      //
+      // *************************************************************
+
+
+      // *************************************************************
+      // Test LMSSetValue with an invalid data type
+      //
+      // Test to see if the LMS can handle and LMSSetValue() call on
+      // a data model element where the value to be used is not the correct
+      // data type.
+      // The expected result is that the LMS return "false" and set the API
+      // Error code to 405 - Incorrect Data Type. The error
+      // code of 201 - Invalid argument error is also acceptable.
+
+         writeLogEntry(_INFO, "Calling LMSSetValue with invalid data type for data model element");
+         logMsg =  "Attempting LMSSetValue(&quot;cmi.core.exit&quot;, &quot;foo&quot;).";
+         logMsg += " Expecting return value of &quot;false&quot; and error code ";
+         logMsg += "&quot;405&quot; (Incorrect Data Type) ";
+         logMsg += "or &quot;201&quot; (Invalid argument error).";
+         writeLogEntry(_INFO, logMsg);
+
+         result = apiHandle.LMSSetValue("cmi.core.exit", "foo");
+
+         logMsg = "LMSSetValue returned &quot;"+result+"&quot;";
+
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+
+         if(result != "false")
+         {
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            if ((errorCode != _IncorrectDataType) &&
+                (errorCode != _InvalidArgumentError))
+            {
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else if(errorCode == _InvalidArgumentError)
+            {
+               logMsg += " In the future, the use of error code &quot;201&quot;";
+               logMsg += " in this situation, may be deprecated.";
+               writeLogEntry(_WARNING, logMsg);
+            }
+            else
+            {
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+      //
+      // *************************************************************
+
+      // *************************************************************
+      // Test LMSSetValue with a reserved element (._children)
+      //
+      // Test to see if the LMS can handle and LMSSetValue() on a SCORM
+      // reserved keyword.
+      // The expected results is that the LMS will return "false" and set
+      // set the API error code to 402 - Invalid set value, element is a
+      // keyword.  The following error codes are also acceptable
+      // 201 - Invalid argument error
+      // 403 - Element is read only
+
+         writeLogEntry(_INFO, "Calling LMSSetValue with a reserved element (._children)");
+         logMsg =  "Attempting LMSSetValue(&quot;cmi.core._children&quot;, &quot;foo&quot;).";
+         logMsg += " Expecting return value of &quot;false&quot; and error code ";
+         logMsg += "&quot;402&quot; (Invalid set value, element is a keyword) ";
+         logMsg += " or &quot;201&quot; (Invalid argument error),";
+         logMsg += " or &quot;403&quot; (Element is read only).";
+         writeLogEntry(_INFO, logMsg);
+
+         // Try to set the cmi.core._children
+         result = apiHandle.LMSSetValue("cmi.core._children", "foo");
+
+         logMsg = "LMSSetValue returned &quot;"+result+"&quot;";
+
+         // Get the error code and the cooresponding error description
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         // Check to see if the LMS returned the correct value
+         if(result != "false")
+         {
+            // It appears that the LMS allowed the children element to be
+            // set.
+            // Conformance Statement: FAILED
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            // It appears that the LMS did not allow the set to occur
+            // Determine if the LMS set the appropriate error code
+            if ((errorCode != _InvalidSetValue) &&
+                (errorCode != _InvalidArgumentError) &&
+                (errorCode != _ElementIsReadOnly))
+            {
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else if(errorCode == _InvalidArgumentError)
+            {
+               logMsg += " In the future, the use of error code &quot;201&quot;";
+               logMsg += " in this situation, may be deprecated.";
+               writeLogEntry(_WARNING, logMsg);
+            }
+            else if(errorCode == _ElementIsReadOnly)
+            {
+               logMsg += " In the future, the use of error code &quot;403&quot;";
+               logMsg += " in this situation,  may be deprecated.";
+               writeLogEntry(_WARNING, logMsg);
+            }
+            else
+            {
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+      //
+      // *********************************************************************
+
+      // *********************************************************************
+      // Call LMSSetValue with a non-contiguous list index
+      //
+      // Test to see if the LMS can handle LMSSetValue() calls on lists of elements
+      // where the index used is not contiguous
+      // The expected results is that the LMS will return "false" and set the
+      // API error code to 201 - Invalid argument error
+      // The following error code is also acceptable
+      // 401 - Not implemented (this is a set on an optional element)
+      //
+         writeLogEntry(_INFO, "Calling LMSSetValue for list element with illegal non-sequential index value");
+         logMsg =  "Attempting LMSSetValue(&quot;cmi.objectives.9.id&quot;, &quot;O09&quot;).";
+         logMsg += " Expecting return value of &quot;false&quot; and error code ";
+         logMsg += "&quot;201&quot; (Invalid argument error) or &quot;401&quot; (Not implemented).";
+         writeLogEntry(_INFO, logMsg);
+
+         // Try to set the cmi.objectives.9.id.  The SCO did not set list entries
+         // 0 - 8 yet.
+         result = apiHandle.LMSSetValue("cmi.objectives.9.id", "O09");
+
+         logMsg = "LMSSetValue returned &quot;"+result+"&quot;";
+
+         // Get the error code and the cooresponding error description
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         // Check to see if the LMS returned the correct value
+         if(result != "false")
+         {
+            // It appears that the LMS did not return the correct value
+            // Conformance Statement: FAILED
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            // It appears that the LMS returned the correct value
+            // Check to make sure the LMS set the appropriate error code
+            if ((errorCode != _InvalidArgumentError) &&
+                (errorCode != _NotImplementedError))
+            {
+               // The LMS did not set the appropriate error code
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else if(errorCode == _NotImplementedError)
+            {
+               writeLogEntry(_WARNING, logMsg);
+            }
+            else
+            {
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+      //
+      // *********************************************************************
+
+
+      // *********************************************************************
+      // Test LMSSetValue cmi.core.lesson_status to "not attempted" (not permitted)
+      //
+      // Test to see if the LMS can handle the following illegal LMSSetValue()
+      // call: LMSSetValue("cmi.core.lesson_status","not attempted")
+      // A SCO is not permitted to set this, however testing to make sure that
+      // an LMS can handle the call.
+      // The expected result is that the LMS shall return "false" and set the
+      // API error code to 405 - Incorrect data type
+      // The error code of 201 is also acceptable.
+         logMsg =  "Attempting LMSSetValue(&quot;cmi.core.lesson_status&quot;, &quot;not attempted&quot;).";
+         logMsg += " Expecting return value of &quot;false&quot; and error code ";
+         logMsg += "&quot;405&quot; (Incorrect data type) ";
+         logMsg += "or &quot;201&quot; (Invalid argument error)";
+         writeLogEntry(_INFO, logMsg);
+
+         // Try to set the lesson_status to not attempted
+         result = apiHandle.LMSSetValue("cmi.core.lesson_status", "not attempted");
+
+         logMsg = "LMSSetValue returned &quot;"+result+"&quot;";
+
+         // Get the error code and the cooresponding error description
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         // Check to make sure the LMS returned the correct value
+         if(result != "false")
+         {
+            // It appears that the LMS did not return the correct value
+            // Conformance Statement: FAILED
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            // It appears that the LMS returned the correct value
+            // Check to make sure the appropriate error code
+            if((errorCode != _IncorrectDataType) &&
+               (errorCode != _InvalidArgumentError))
+            {
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else if(errorCode == _InvalidArgumentError)
+            {
+               logMsg += " In the future, the use of error code &quot;201&quot;";
+               logMsg += " in this situation, may be deprecated.";
+               writeLogEntry(_WARNING, logMsg);
+            }
+            else
+            {
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+      //
+      // *********************************************************************
+
+
+      // *****************************************************************
+      // Test LMSGetValue return values and error conditions...
+      // *****************************************************************
+
+      writeLogEntry(_OTHER, "");
+      writeLogEntry(_INFO, "Testing LMSGetValue return values and error conditions");
+      writeLogEntry(_OTHER, "");
+
+      // *****************************************************************
+      // Test call to LMSGetValue with erroneous parameters
+      //
+      // Test to make sure the LMS can handle LMSGetValue() to invalid
+      // data model elements
+      // The expected results is that the LMS will return an empty string ("")
+      // and set the API error code to 201 - Invalid argument.  The error code
+      // of 401 is also acceptable
+         writeLogEntry(_INFO, "Calling LMSGetValue with invalid data model element name.");
+         logMsg =  "Attempting LMSGetValue(&quot;cmi.core.none&quot;)";
+         logMsg += " Expecting error code ";
+         logMsg += "&quot;201&quot; (Invalid argument error) or &quot;401&quot; (Not implemented error).";
+         writeLogEntry(_INFO, logMsg);
+
+         // Try to get the cmi.core.none
+         result = apiHandle.LMSGetValue("cmi.core.none");
+
+         logMsg = "LMSGetValue returned &quot;"+result+"&quot;";
+
+         // Get the error code and the cooresponding error description
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         // Check to make sure the LMS returned the appropriate value
+         if(result != "")
+         {
+            // It appears that the LMS did not return the appropriate value
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            // It appears that the LMS returned the appropriate value
+            // Check to make sure the LMS set the appropriate error code
+            if((errorCode != _InvalidArgumentError) && (errorCode != _NotImplementedError))
+            {
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else
+            {
+               if ( errorCode == _InvalidArgumentError )
+               {
+                   writeLogEntry(_PASSED, logMsg);
+               }
+               else
+               {
+                   writeLogEntry(_WARNING, logMsg);
+               }
+            }
+         }
+      //
+      // *********************************************************************
+
+      // *********************************************************************
+      // Test Call to LMSGetValue with non-readable element
+      //
+      // Test to see if the LMS can handle calls to LMSGetValue() for elements
+      // that are write-only
+      // The expected results is that the LMS will return an empty string and
+      // set the API error code to 404 - Element is write only.  The error code
+      // of 201 - invalid argument is also acceptable
+         writeLogEntry(_INFO, "Calling LMSGetValue with write-only data model element.");
+         logMsg =  "Attempting LMSGetValue(&quot;cmi.core.session_time&quot;)";
+         logMsg += " Expecting error code ";
+         logMsg += "&quot;404&quot; (Element is write only) ";
+         logMsg += "or &quot;201&quot; (Invalid argument error).";
+         writeLogEntry(_INFO, logMsg);
+
+         // Try to invoke the LMSGetValue() call
+         result = apiHandle.LMSGetValue("cmi.core.session_time");
+
+         logMsg = "LMSGetValue returned &quot;"+result+"&quot;";
+
+         // Get the error code and cooresponding error description
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         // Check to make sure the LMS returned the appropriate value
+         if(result != "")
+         {
+            // It appears that the LMS returned an invalid value
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            // It appears that the LMS returned the appropriate value
+            if ((errorCode != _InvalidArgumentError) &&
+                (errorCode != _ElementIsWriteOnly))
+            {
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else
+            {
+               if (errorCode == _ElementIsWriteOnly)
+               {
+                  writeLogEntry(_PASSED, logMsg);
+               }
+               else
+               {
+                  logMsg += " In the future, the use of error code &quot;201&quot;";
+                  logMsg += " in this situation, may be deprecated.";
+                  writeLogEntry(_WARNING, logMsg);
+               }
+            }
+         }
+      //
+      // ***********************************************************************
+
+      // ***********************************************************************
+      // Test LMSGetValue for ._children on data model category that has no ._children
+      //
+      // Test to see if the LMS can handle invalid calls to LMSGetValue()
+      // inovling a ._children call on a data model element that does not
+      // support this keyword
+      // The expected results is that the LMS will return an empty string and
+      // set the API error code to 202 - Element cannot have children.  The
+      // error code of 201 - invalid argument is also acceptable.
+         writeLogEntry(_INFO, "Calling LMSGetValue for _children on data model category that has no children");
+         logMsg =  "Attempting LMSGetValue(&quot;cmi.launch_data._children&quot;)";
+         logMsg += " Expecting error code ";
+         logMsg += "&quot;202&quot; (Element cannot have children) or ";
+         logMsg += " &quot;201&quot; (Invalid argument error)."
+         writeLogEntry(_INFO, logMsg);
+
+         // Try to invoke the LMSGetValue() call
+         result = apiHandle.LMSGetValue("cmi.launch_data._children");
+
+         logMsg = "LMSGetValue returned &quot;"+result+"&quot;";
+
+         // Get the error code and the cooresponding error condition
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         // Check to make sure the LMS returned the appropriate value
+         if(result != "")
+         {
+            // It appears that the LMS did not return the appropriate value
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            // It appears that the LMS did return the appropriate value
+            // Check to make sure the LMS set the appropriate error code
+            if((errorCode != _ElementCannotHaveChildren) &&
+               (errorCode != _InvalidArgumentError))
+            {
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else if(errorCode == _InvalidArgumentError)
+            {
+               logMsg += " In the future, the use of error code &quot;201&quot;";
+               logMsg += " in this situation, may be deprecated.";
+               writeLogEntry(_WARNING, logMsg);
+            }
+            else
+            {
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+      //
+      // **********************************************************************
+
+      // **********************************************************************
+      // Test LMSGetValue for ._count on data model element/category that
+      // doesn't support ._count
+      //
+      // Test to see if the LMS can handle invalid calls to LMSGetValue()
+      // inovling a ._count call on a data model element that does not
+      // support this keyword
+      // The expected results is that the LMS will return an empty string and
+      // set the API error code to 203 - Element not an array - Cannot have count
+      // error code of 201 - invalid argument is also acceptable.
+         writeLogEntry(_INFO, "Calling LMSGetValue for _count on data model element that is not an array/list");
+         logMsg =  "Attempting LMSGetValue(&quot;cmi.launch_data._count&quot;)";
+         logMsg += " Expecting error code ";
+         logMsg += "&quot;203&quot; (Element not an array - Cannot have count) or ";
+         logMsg += " &quot;201&quot; (Invalid argument error)."
+         writeLogEntry(_INFO, logMsg);
+
+         // Attempt to invoke the LMSGetValue() call
+         result = apiHandle.LMSGetValue("cmi.launch_data._count");
+
+         logMsg = "LMSGetValue returned &quot;"+result+"&quot;";
+
+         // Get the error code and the cooresponding error description
+         errorCode = apiHandle.LMSGetLastError();
+         errorDesc = apiHandle.LMSGetErrorString(errorCode);
+
+         logMsg += " and set error code &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         // Check to make sure the LMS returned the appropriate value
+         if(result != "")
+         {
+            // It appears that the LMS did not return the appropriate value
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+         }
+         else
+         {
+            // It appears that the LMS did return the appropriate value
+            // Check to make sure the LMS set the appropriate error code
+            if ((errorCode != _ElementIsNotAnArray) &&
+                (errorCode != _InvalidArgumentError))
+            {
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else if(errorCode == _InvalidArgumentError)
+            {
+               logMsg += " In the future, the use of error code &quot;201&quot;";
+               logMsg += " in this situation, may be deprecated.";
+               writeLogEntry(_WARNING, logMsg);
+            }
+            else
+            {
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+
+
+      // ********************************************
+      // Test LMSGetErrorString and LMSGetDiagnostic
+      // ********************************************
+      writeLogEntry(_OTHER, "");
+      writeLogEntry(_INFO, "Testing LMSGetErrorString and LMSGetDiagnostic return values");
+
+      for(var eIdx=0; eIdx<12; eIdx++)
+      {
+         logMsg = "LMSGetErrorString(&quot;";
+         logMsg += errorMatrix[eIdx][0];
+         logMsg += "&quot;) returned: &quot;";
+
+         // Attempt to make the call
+         result = apiHandle.LMSGetErrorString(errorMatrix[eIdx][0]);
+
+         logMsg += result;
+
+         if (validateErrorString(errorMatrix[eIdx][0], result) != true)
+         {
+            // result is invalid
+            logMsg += "&quot;.  Expected &quot;";
+            logMsg += errorMatrix[eIdx][1];
+            logMsg += "&quot;";
+            writeLogEntry(_WARNING, logMsg);
+         }
+         else
+         {
+            // result is valid
+            logMsg += "&quot; as expected.";
+            writeLogEntry(_PASSED, logMsg);
+         }
+
+         logMsg = "LMSGetDiagnostic(&quot;";
+         logMsg += errorMatrix[eIdx][0];
+         logMsg += "&quot;) returned: &quot;";
+
+         // Attempt to make call
+         // First iteration - special case - ensure this API method exists
+         // along with normal LMSGetDiagnostic processing.
+         if (eIdx == 0)
+         {
+            result = doLMSGetDiagnosticTest(errorMatrix[eIdx][0]);
+         }
+         else
+         {
+            result = doLMSGetDiagnostic(errorMatrix[eIdx][0]);
+         }
+
+         logMsg += result + "&quot;";
+         writeLogEntry(_PASSED, logMsg);
+
+      }
+
+      // set SCO status - not really part of the test...
+      result = doLMSSetValue("cmi.core.lesson_status", "completed");
+      result = doLMSSetValue("cmi.core.exit", "");
+      result = doLMSSetValue("cmi.core.session_time", "03:01:39.52");
+
+      setDMStatus();
+
+      // **********************************************************************
+      // Test LMSCommit with invalid parameter
+      //
+      // Test to verify that the LMS can handle invalid calls to LMSCommit()
+      // The expected results is that the LMS will return a "false" and set
+      // the API error code to 201 - Invalid argument error
+
+      writeLogEntry(_OTHER, "");
+      writeLogEntry(_INFO, "Testing LMSCommit with incorrect parameter value");
+      writeLogEntry(_OTHER, "");
+      writeLogEntry(_INFO, "Calling LMSCommit(&quot;xyz&quot)");
+
+      // Attempt to make call with an invalid
+      result = apiHandle.LMSCommit("xyz");
+
+      // Check the return value from the LMS
+      if(result != "true" && result != "false")
+      {
+         // It appears that the LMS returned an invalid value
+         lmsRTEApplet.setApiConformant(false);
+         writeLogEntry(_FAILED, "LMSCommit returned &quot;"+result+"&quot;, " +
+                                "expected return value &quot;false&quot;");
+      }
+      else
+      {
+         // It appears that the LMS returned the appropriate value
+         // Check to make sure the error code was set appropriately
+         var errorCode = apiHandle.LMSGetLastError();
+         var errorDesc = apiHandle.LMSGetErrorString(errorCode);
+         logMsg = "LMSCommit returned &quot;"+result+"&quot; and set the API";
+         logMsg += " Error Code to &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         if(result == "false")
+         {
+            if(errorCode != _InvalidArgumentError)
+            {
+               // LMSCommit returned false, but set the wrong error condition
+               logMsg += ".<br>Expected return value of &quot;false&quot; and ";
+               logMsg += "Error Code &quot;201&quot;.";
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else
+            {
+               logMsg += " as expected.";
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+         else if(result == "true")
+         {
+
+            logMsg += ".<br>Expected return value of &quot;false&quot; and ";
+            logMsg += "Error Code &quot;201&quot;.";
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+
+          }
+      }
+
+      if(result == "false")
+      {
+         // if call with bad parameter failed, then try to call doLMSCommit
+         // to continue the test...
+         result = doLMSCommit();
+
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+      }
+
+      lmsRTEApplet.setCurrentSCOStatus("completed");
+
+      // ****************************************
+      // Test LMSFinish with invalid parameter
+      // ****************************************
+      writeLogEntry(_OTHER, "");
+      writeLogEntry(_INFO, "Testing LMSFinish with incorrect parameter value");
+      writeLogEntry(_OTHER, "");
+      writeLogEntry(_INFO, "Calling LMSFinish(&quot;yahtzee!&quot)");
+
+      // have to set the status display here in case LMSFinish works...
+      // we can signal to the operator to continue the test...
+      teststatus.innerText = "Status:  This SCO Test Completed.";
+	  
+      //alert("Completing testing.  Please launch the next SCO.");
+
+      // Attempt to make invalid call to LMSFinish()
+      result = apiHandle.LMSFinish("yahtzee!");
+
+      // Check to make sure LMS returned the appropriate value
+      if(result != "true" && result != "false")
+      {
+         // It appears that the LMS did not return the appropriate value
+         lmsRTEApplet.setApiConformant(false);
+         writeLogEntry(_FAILED, "LMSFinish returned &quot;"+result+"&quot;, " +
+                                "expected return value &quot;false&quot;");
+      }
+      else
+      {
+         // It appears that the LMS did return the appropriate value
+         // Get the error code and coorsponding error description
+         var errorCode = apiHandle.LMSGetLastError();
+         var errorDesc = apiHandle.LMSGetErrorString(errorCode);
+         logMsg = "LMSFinish returned &quot;"+result+"&quot; and set the API ";
+         logMsg += "Error Code to &quot;";
+         logMsg += errorCode+"&quot; ("+errorDesc+")";
+
+         // If the LMS returned the expected value ...
+         if(result == "false")
+         {
+            // Check to make sure the expected error code was set
+            if(errorCode != _InvalidArgumentError)
+            {
+               // LMSFinish returned false, but set the wrong error condition
+               logMsg += ".<br>Expected return value of &quot;false&quot; ";
+               logMsg += "and Error Code &quot;201&quot;.";
+               lmsRTEApplet.setApiConformant(false);
+               writeLogEntry(_FAILED, logMsg);
+            }
+            else
+            {
+               logMsg += " as expected.";
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+         else if(result == "true")
+         {
+            // The LMS did not return the appropriate value
+            logMsg += ".<br>Expected return value of &quot;false&quot; and ";
+            logMsg += "Error Code &quot;201&quot;.";
+            lmsRTEApplet.setApiConformant(false);
+            writeLogEntry(_FAILED, logMsg);
+
+          }
+      }
+
+      if(result == "false")
+      {
+         // if call with bad parameter failed, then try to call LMSInitialize the right way now
+         // to continue the test...
+
+         result = doLMSFinish();
+
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+      }
+
+   }
+
+</script>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course I - SCO #02</title>
+</head>
+
+<body onload="performTest();">
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course I - SCO #02 <br />
+<br />
+<br />
+<br />
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</font>
+</div>
+<br />
+<hr color="#353889" />
+<br />
+<p>
+Please view the ADL test suite log for detailed progress and status information
+for this test.
+</p>
+<p>
+This test may take several minutes to complete. Please be patient!
+</p>
+<p>
+Depending upon the functionality of the LMS, this SCO may or may not be unloaded
+automatically upon conclusion of the testing performed by the SCO. When the SCO
+completes, the status above will change to "<strong><em>This SCO Test Completed.</em></strong>
+".  If the LMS does NOT automatically sequence SCO's, then please navigate to
+the next SCO manually when this status is displayed.
+</p>
+<p>
+This Sharable Content Object (SCO) tests the Learning Management System for
+conformance with the Run-Time Environment Guidelines as described in the SCORM.
+The purpose of this SCO is to determine if the LMS implements the API functions
+correcltly.  Specifically, this SCO performs the following:
+</p>
+<ol>
+   <ol>
+      <li>
+         Validates that this SCO was launched in the appropriate sequence (second)
+      <li>
+         Locates the LMS's API implementation
+      <li>
+         Attempts calls to API functions prior to successful call to LMSInitialize
+      <li>
+         Tests the return value and error conditions of the LMS's implementation of each
+         of the API Adapter functions.
+      <li>
+         Calls the LMSCommit function
+      <li>
+         Calls the LMSFinish function
+      </li>
+   </ol>
+</ol>
+<br />
+<hr color="#353889" />
+</body>
+</html>

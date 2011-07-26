@@ -1,0 +1,647 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html>
+<script language="JAVASCRIPT">
+/*******************************************************************************
+** Filename:  sco04.htm
+**
+** File Description: ADL SCORM Test Course I - SCO 04 - Tests the LMS's:
+**                   Launch Conformance
+**                   API implementation Conformance - specifically ability of LMS
+**                   to save/persist data model state across "sessions".
+**
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+** 05/17/2001     S.Thropp          PT 874: Removed the <param name = codebase
+**                                  from the applet
+**
+** 07/03/2001     Jeff Falls        PT 964: Modified to be entered 3 times vice
+**                                  the previous 2 times.  A set to
+**                                  cmi.core.session_time is called in the first
+**                                  two entries.  In the third entry,
+**                                  cmi.core.total_time is checked for the
+**                                  accumulation of this time.
+**
+** 10/5/2001      Bill Capone       PT 1217 & 1233: Added calls to newly created
+**                                  function timeCompare().
+**
+** 11/27/2001     Jeff Falls        Fixed the test for correct use of "credit"
+**                                  and "no-credit"
+**
+** 01/09/2002     Bill Capone       Check cmi.core.entry after setting
+**                                  cmi.core.exit to something other than
+**                                  "suspend".  This is to satisfy Version 1.2
+**                                  Conformance Requirements 1.7.2.
+**
+** 01/16/2002     Bill Capone       Removed code that satisfied LMS Requirements
+**                                  1.6.6 as that code was causing the Test
+**                                  Suite to NOT re-enter sco04.
+**
+** 03/07/2002     Bill Capone       PT 1763: Changed the set for lesson_status
+**                                  from failed to completed.  Change occurred
+**                                  in visit==2 in performTest().
+**
+**
+** 06/21/2011	  Mayank Gupta	    Modified performTest function. For alert 
+**				    compatibility with Selenium WebDriver used 
+**				    in ADL 1.2 Test Script.
+**
+/*******************************************************************************/
+</script>
+<head>
+<meta http-equiv="expires" content="Tue, 20 Aug 1999 01:00:00 GMT">
+<meta http-equiv="Pragma" content="no-cache">
+<script language=JAVASCRIPT src="lmsrtefunctions.js"></script>
+<script language=JAVASCRIPT>
+
+   // Define data model related variables and constants
+   var visit = 0;
+
+   /*******************************************************************************
+   **
+   ** Function performTest()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function is the main test driver for this SCO.
+   **
+   *******************************************************************************/
+   function performTest()
+   {
+
+      var prevSCO = lmsRTEApplet.getCourseOneCurrentSCOIndex();
+
+      // Used to get the cmi.core.total_time and compare
+      var time;
+
+      lmsRTEApplet.setCurrentSCO(1, 3);  // fourth SCO of course I
+
+      // Is this the first or second time in here?
+      visit = lmsRTEApplet.getCurrentSCOLaunchCount();
+
+      if(_Debug)
+      {
+         alert("previous visits to this sco: "+visit);
+      }
+
+      // Display some status indicator that lets us know which entry into
+      // this SCO the test suite thinks this is...
+
+      if(visit == 0)
+      {
+         writeLogEntry(_NEWSCO, "");
+         writeLogEntry(_NEWSCO, "*****************************");
+         writeLogEntry(_NEWSCO, "      Testing SCO 04         ");
+         writeLogEntry(_NEWSCO, "*****************************");
+
+         // first time launch of this SCO...
+         writeLogEntry(_OTHER, "");
+         writeLogEntry(_INFO, "<a name=\"c1s4\">*****************************");
+         writeLogEntry(_INFO, "              SCO 04 has been launched.");
+         writeLogEntry(_INFO, "*****************************</a>");
+
+         writeLogEntry(_INFO, "Validating SCO launch sequence.");
+
+         // Previous SCO should be SCO 3 (index 2)
+         if(prevSCO != 2)
+         {
+            // The SCO was launched in the wrong order
+            var launchMessage = "This SCO was not launched in the correct sequence.\n";
+            launchMessage += "Click OK if the SCO was launched automatically by the LMS.\n";
+            launchMessage += "Click Cancel if the SCO was launched by the user.";
+
+            //if(confirm(launchMessage))
+            //{
+               writeLogEntry(_FAILED, "The LMS did not launch the SCO in the appropriate sequence.");
+               lmsRTEApplet.setApiConformant(false);
+
+            //}
+            /*else
+            {
+               // must have been operator error?
+               writeLogEntry(_FAILED, "The operator did not launch the SCO in the appropriate sequence.");
+               lmsRTEApplet.setApiConformant(false);
+            }*/
+         }
+         else
+         {
+            writeLogEntry(_PASSED, "The SCO has been launched in the appropriate sequence.");
+
+         }
+
+         // Set up the API for the SCO to start communication
+         setAPIHandle(null);
+
+         // setAPIHandle() may have set the overall SCO status to terminated, if
+         // so end the test and return
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         // Initialize the SCO communication
+         var result = doLMSInitialize();
+
+         // doLMSInitialize() may have set the overall SCO status to terminated, if
+         // so end the test and return
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         // Get the cmi.core.entry.  Test to make sure that the LMS set the
+         // cmi.core.entry to ab-initio.  This is the first time in the SCO
+         result = doLMSGetValue("cmi.core.entry");
+         if(result != "ab-initio")
+         {
+            writeLogEntry(_FAILED, "Expected cmi.core.entry value of &quot;ab-initio&quot;");
+            allMandatory = false;
+         }
+
+         // Set some data model values that will be used to verify persistence
+         result = doLMSSetValue("cmi.core.lesson_location", "#paragraph3");
+         result = doLMSSetValue("cmi.core.lesson_status", "incomplete");
+         result = doLMSSetValue( "cmi.core.exit", "logout" );
+         result = doLMSSetValue("cmi.core.session_time", "03:01:39.52");
+         result = doLMSSetValue("cmi.suspend_data", "A=1,B=2,C=3");
+
+         setDMStatus();
+
+         var resultCommit = "";
+
+         // Ask the LMS to persist all data
+         resultCommit = doLMSCommit();
+
+         teststatus.innerText = "Status:  Step 1 of SCO Test Completed.  Please Log out and re-login to the LMS.";
+
+         visit++;
+
+         lmsRTEApplet.setCurrentSCOLaunchCount(visit);
+
+         //alert("Part I of this test SCO is complete.  Please log out of the LMS, then return to this SCO to complete the test.");
+
+         var resultFinish = "";
+
+         // Invoke the LMSFinish()
+         resultFinish = doLMSFinish();
+      }
+      else if(visit == 1)
+      {
+         // second entry into this SCO...
+
+         teststatus.innerText = "Status:  (Step 2) Testing in progress...";
+
+         writeLogEntry(_OTHER, "");
+         writeLogEntry(_OTHER, "");
+         writeLogEntry(_INFO, "This appears to be the second entry into SCO04");
+
+         setAPIHandle(null);
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         var result = doLMSInitialize();
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         // get previously set element values to determine if the values match
+         // thereby indicating whether or not the LMS can save data element values
+         // across user (student) sessions...
+
+         writeLogEntry( _INFO, "Testing to determine LMS ability to save state for mandatory items across sessions");
+
+         var loc = doLMSGetValue("cmi.core.lesson_location");
+         if(loc != "#paragraph3")
+         {
+            writeLogEntry(_FAILED, "cmi.core.lesson_location value does not match previously set value");
+            allMandatory = false;
+
+            writeLogEntry(_FAILED, "Assuming that LMSCommit and/or LMSFinish call in step 1 of this SCO did not persist the value");
+            lmsRTEApplet.setApiConformant(false);
+         }
+         else
+         {
+            writeLogEntry(_PASSED, "cmi.core.lesson_location value matches previously set value");
+         }
+
+         var suspendData = doLMSGetValue("cmi.suspend_data");
+         if(suspendData != "A=1,B=2,C=3")
+         {
+            writeLogEntry(_FAILED, "cmi.suspend_data value does not match previously set value");
+            allMandatory = false;
+
+            writeLogEntry(_FAILED, "Assuming that LMSCommit and/or LMSFinish call in step 1 of this SCO did not persist the value");
+            lmsRTEApplet.setApiConformant(false);
+
+         }
+         else
+         {
+            writeLogEntry(_PASSED, "cmi.suspend_data value matches previously set value");
+         }
+
+         time = doLMSGetValue("cmi.core.total_time");
+         var expectedTime = "03:01:39.52";
+
+         if (timeCompare(time, expectedTime) == true)
+         {
+            writeLogEntry( _PASSED, "cmi.core.total_time returned correctly");
+         }
+         else
+         {
+            writeLogEntry( _FAILED, "Expected cmi.core.total_time of &quot;03:01:39.52&quot;");
+            allMandatory = false;
+         }
+
+         result = doLMSSetValue("cmi.core.lesson_status", "incomplete");
+         result = doLMSSetValue( "cmi.core.exit", "suspend" );
+         doLMSSetValue("cmi.core.session_time", "00:12:48.22");
+
+         result = doLMSGetValue("cmi.core.entry");
+         if(result != "")
+         {
+            writeLogEntry(_FAILED, "Expected cmi.core.entry value of &quot;&quot;");
+            allMandatory = false;
+         }
+
+
+         setDMStatus();
+
+         var resultCommit = "";
+         resultCommit = doLMSCommit();
+
+         teststatus.innerText = "Status:  Step 2 of SCO Test Completed.  Please Log out and re-login to the LMS.";
+
+         visit ++;
+         lmsRTEApplet.setCurrentSCOLaunchCount(visit);
+
+         //alert("Part 2 of this test SCO is complete.  Please log out of the LMS, then return to this SCO to complete the test.");
+
+
+         var resultFinish = "";
+         resultFinish = doLMSFinish();
+
+      }
+      else if(visit == 2)
+      {
+         teststatus.innerText = "Status:  (Step 3) Testing in progress...";
+
+         writeLogEntry(_OTHER, "");
+         writeLogEntry(_OTHER, "");
+         writeLogEntry(_INFO, "This appears to be the third entry into SCO04");
+
+         setAPIHandle(null);
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         var result = doLMSInitialize();
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         // get previously set element values to determine if the values match
+         // thereby indicating whether or not the LMS can save data element values
+         // across user (student) sessions...
+         writeLogEntry( _INFO, "Testing to determine LMS ability to save state for mandatory items across sessions");
+
+         time = doLMSGetValue("cmi.core.total_time");
+         var expectedTime = "03:14:27.74";
+         if (timeCompare(time, expectedTime))
+         {
+            writeLogEntry( _PASSED, "cmi.core.total_time returned correctly");
+         }
+         else
+         {
+            writeLogEntry( _FAILED, "Expected cmi.core.total_time of &quot;03:14:27.74&quot;");
+            allMandatory = false;
+         }
+
+         var credit = doLMSGetValue("cmi.core.credit");
+         doLMSSetValue("cmi.core.lesson_status", "completed");
+         if(credit == "credit")
+         {
+            doLMSSetValue("cmi.core.score.raw", "25");
+         }
+         else if (credit == "no-credit")
+         {
+            writeLogEntry(_WARNING, "The instructions specified that this test course should be taken for &quot;credit&quot;");
+         }
+         else
+         {
+            writeLogEntry(_FAILED, "cmi.core.credit must be set to either credit or no-credit");
+            allMandatory = false;
+         }
+         doLMSSetValue("cmi.core.exit", "" );
+
+         setDMStatus();
+
+         var resultCommit = "";
+         resultCommit = doLMSCommit();
+
+         lmsRTEApplet.setCurrentSCOStatus("completed");
+
+         teststatus.innerText = "Status:  Step 3 Complete.  This SCO Test Completed.";
+
+         visit ++;
+         lmsRTEApplet.setCurrentSCOLaunchCount(visit);
+
+         //alert("Completing testing.  Please launch the next SCO.");
+
+         var resultFinish = "";
+         resultFinish = doLMSFinish();
+      }
+      else
+      {
+         writeLogEntry(_FAILED, "The SCO launch sequence could not be determined");
+         lmsRTEApplet.setApiConformant(false);
+         terminateTest();
+      }
+
+   }
+
+
+</script>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course I - SCO #04</title>
+</head>
+<body onload="performTest();">
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course I - SCO #04<br />
+<br />
+<br />
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</div>
+</font>
+<br />
+<hr color="#353889">
+<br />
+<p>
+</p>
+<p>
+Please view the ADL test suite log for detailed progress and status information
+for this test.
+</p>
+<p>
+This test may take several minutes to complete. Please be patient!
+</p>
+<p>
+This SCO has three parts.  The user is required to exit the course and log out of
+the LMS after part one and two are completed, and then log back in and resume
+the course.  Depending upon the functionality of the LMS, this SCO may or may
+not be unloaded automatically upon conclusion of the testing performed by the
+SCO.  When the SCO completes, the status indicator (above) will change.  If the
+LMS does not automatically control navigation and sequencing of SCOs, then
+please exit the LMS after steps 1 and 2 are completed.   After Step 3 is
+completed, please go to SCO 05.
+</p>
+<p>
+This Sharable Content Object (SCO) tests the Learning Management System for
+conformance with the Runtime Environment Guidelines as described in the SCORM.
+The purpose of this SCO is to determine if the LMS has the ability to save data
+model element values across user sessions and make the values available upon
+student re-entry. Specifically, this SCO performs the following:
+</p>
+<br />
+<hr color="#353889">
+<br />
+<p align="left">
+<em><strong>Upon First Entry</strong>: </em>
+</p>
+<ol>
+   <ol>
+      <li>
+         <div align="left">
+            Validates that this SCO was launched in the appropriate sequence (fourth)
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Locates the LMS's API implementation
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSInitialize function
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Verifies expected initial values for the following data model elements:
+         </div>
+      </li>
+      <ul>
+         <li>"cmi.core.entry"</li>
+      </ul>
+      <li>
+         <div align="left">
+            Automatically sets the following values to these data elements:
+         </div>
+      </li>
+      <ul>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.lesson_location", "#paragraph3");
+            </div>
+         </li>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.lesson_status", "incomplete");
+            </div>
+         </li>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.exit", "logout");
+            </div>
+         </li>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.session_time", "03:01:39.52");
+            </div>
+         </li>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.suspend_data", "A=1,B=2,C=3");
+            </div>
+         </li>
+      </ul>
+      <li>
+         <div align="left">
+            Calls the LMSCommit function
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSFinish function
+         </div>
+      </li>
+   </ol>
+</ol>
+
+<br />
+<hr color="#353889">
+<br />
+<p align="left">
+<strong><em>Upon Second Entry: </em></strong>
+</p>
+<ol style="MARGIN-RIGHT: 0px">
+   <ol>
+      <li>
+         <div align="left">
+            Locates the LMS's API implementation
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSInitialize function
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSGetValue function for the following previously set
+            data model elements and compares them with the expected values:
+         </div>
+      </li>
+      <ul>
+         <li>"cmi.core.lesson_location"</li>
+         <li>"cmi.suspend_data"</li>
+         <li>"cmi.core.total_time"</li>
+         <li>"cmi.core.lesson_status"</li>
+         <li>"cmi.core.entry"</li>
+      </ul>
+      <li>
+         <div align="left">
+            Automatically sets the following values to these data model elements
+         </div>
+      </li>
+      <ul>
+         <li>LMSSetValue("cmi.core.lesson_status", "incomplete")</li>
+         <li>LMSSetValue("cmi.core.exit", "logout")</li>
+         <li>LMSSetValue("cmi.core.session_time", "00:12:48.22")</li>
+      </ul>
+      <li>
+         <div align="left">
+            Calls the LMSCommit function
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSFinish function
+         </div>
+      </li>
+   </ol>
+</ol>
+
+<br />
+<hr color="#353889">
+<br />
+<p align="left">
+<strong><em>Upon Third Entry: </em></strong>
+</p>
+<ol style="MARGIN-RIGHT: 0px">
+   <ol>
+      <li>
+         <div align="left">
+            Locates the LMS's API implementation
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSInitialize function
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSGetValue function for the following previously set
+            data model elements and compares them with the expected values:
+         </div>
+      </li>
+      <ul>
+         <li>"cmi.core.total_time"</li>
+         <li>"cmi.core.credit"</li>
+      </ul>
+      <li>
+         <div align="left">
+            May set one or more of the following values to these data model elements:
+         </div>
+      </li>
+      <ul>
+         <li>LMSSetValue("cmi.core.lesson_status", "completed")</li>
+         <li>LMSSetValue("cmi.core.score.raw", "25")</li>
+         <li>LMSSetValue("cmi.core.exit", "")</li>
+      </ul>
+      <li>
+         <div align="left">
+            Calls the LMSCommit function
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSFinish function
+         </div>
+      </li>
+   </ol>
+</ol>
+
+<br />
+<hr color="#353889">
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html>
+<script language="JAVASCRIPT">
+/*******************************************************************************
+** Filename:  SCO02.htm
+**
+** File Description: ADL SCORM Test Course II - SCO 02 - Tests the LMS's:
+**                   Launch Conformance
+**                   API implementation Conformance - specifically ability of LMS
+**                   to save/persist data model state across "sessions".
+**
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+** 05/17/2001     S.Thropp          PT 874: Removed the <param name = codebase
+**                                  from the applet
+**
+** 10/5/2001      Bill Capone       Modified a string to hold "no-credit" versus
+**                                  "no credit".
+**
+** 01/28/2002     S. Thropp         General formatting changes and added comments.
+**
+** 03/14/2002     Bill Capone       PT 1763: Changed the set for lesson_status
+**                                  from failed to completed.  Change occurred
+**                                  in performTest().
+**
+** 06/21/2011	  Mayank Gupta	    Modified performTest function. For alert 
+**				    compatibility with Selenium WebDriver used 
+**				    in ADL 1.2 Test Script.
+**
+/*******************************************************************************/
+</script>
+<head>
+<meta http-equiv="expires" content="Tue, 20 Aug 1999 01:00:00 GMT">
+<meta http-equiv="Pragma" content="no-cache">
+<script language=JAVASCRIPT src="lmsrtefunctions.js"></script>
+<script language=JAVASCRIPT>
+
+   var visit = 0;
+
+   /*******************************************************************************
+   **
+   ** Function performTest()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function is the main test driver for this SCO.
+   **
+   *******************************************************************************/
+   function performTest()
+   {
+
+      var prevSCO = lmsRTEApplet.getCourseTwoCurrentSCOIndex();
+
+      // second SCO of course II
+      lmsRTEApplet.setCurrentSCO(2, 1);
+
+
+      // is this the first or second time in here?
+      visit = lmsRTEApplet.getCurrentSCOLaunchCount();
+
+      if(_Debug)
+      {
+         alert("previous visits to this sco: "+visit);
+      }
+
+      // display some status indicator that lets us know which entry into
+      // this SCO the test suite thinks this is...
+
+      if(visit == 0)
+      {
+         writeLogEntry(_NEWSCO, "");
+         writeLogEntry(_NEWSCO, "*****************************");
+         writeLogEntry(_NEWSCO, "      Testing SCO 02         ");
+         writeLogEntry(_NEWSCO, "*****************************");
+
+         // first time launch of this SCO...
+         writeLogEntry(_OTHER, "");
+         writeLogEntry(_INFO, "<a name=\"c2s2\">*****************************");
+         writeLogEntry(_INFO, "SCO 02 has been launched.");
+         writeLogEntry(_INFO, "*****************************");
+         writeLogEntry(_INFO, "Validating SCO launch sequence.");
+
+         if(prevSCO != 0) // previous sco should be sco 1 (index 0)
+         {
+            // The SCO was launched in the wrong order
+            var launchMessage = "This SCO was not launched in the correct sequence.\n";
+            launchMessage += "Click OK if the SCO was launched automatically by the LMS.\n";
+            launchMessage += "Click Cancel if the SCO was launched by the user.";
+
+            //if(confirm(launchMessage))
+            //{
+               writeLogEntry(_FAILED, "The LMS did not launch the SCO in the appropriate sequence.");
+               lmsRTEApplet.setAPIConformant(false);
+            //}
+            /*else
+            {
+               // must have been operator error?
+               writeLogEntry(_FAILED, "The operator did not launch the SCO in the appropriate sequence.");
+               lmsRTEApplet.setAPIConformant(false);
+            }*/
+         }
+         else
+         {
+            writeLogEntry(_PASSED, "The SCO has been launched in the appropriate sequence.");
+
+         }
+
+         // Set up the API for communication
+         setAPIHandle(null);
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         // Initialize communication with the LMS
+         var result = doLMSInitialize();
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         // If the operator indicated that the LMS supports "no-credit"
+         // for cmi.core.credit, validate the return value
+         var creditSupport = lmsRTEApplet.getClaimCreditSupport();
+
+         if(creditSupport == true)
+         {
+            var creditValue = doLMSGetValue("cmi.core.credit");
+            var errCode = doLMSGetLastError();
+            if(errCode != _NoError)
+            {
+               allMandatory = false;
+            }
+            else
+            {
+               if(creditValue != "no-credit")
+               {
+                  var logMsg = "The operator indicated that the LMS supports both ";
+                  logMsg += "&quot;credit&quot; and &quot;no-credit&quot;.";
+                  logMsg += "  Expected LMSGetValue(&quot;cmi.core.credit&quot;)";
+                  logMsg += " to return a value of &quot;no-credit&quot;";
+                  writeLogEntry(_WARNING, logMsg);
+               }
+            }
+         }
+
+         // If the operator indicated that the LMS supports "browse"
+         // for cmi.core.lesson_mode, validate the return value
+         var modeSupport = lmsRTEApplet.getClaimModeSupport();
+
+         if(modeSupport == true)
+         {
+            var modeValue = doLMSGetValue("cmi.core.lesson_mode");
+            errCode = doLMSGetLastError();
+            if(errCode != _NoError)
+            {
+               allOptional = false;
+            }
+            else
+            {
+               if(modeValue != "browse")
+               {
+                  var logMsg = "The operator indicated that the LMS supports ";
+                  logMsg += "&quot;normal&quot; and &quot;browse&quot;.";
+                  logMsg += "  Expected LMSGetValue(&quot;cmi.core.lesson_mode&quot;)";
+                  logMsg += " to return a value of &quot;browse&quot;";
+                  writeLogEntry(_WARNING, logMsg);
+               }
+            }
+         }
+
+         // Set some values that will be tested for persistence between
+         // logout sessions
+         result = doLMSSetValue("cmi.core.lesson_location", "#paragraph3");
+         result = doLMSSetValue("cmi.core.lesson_status", "incomplete");
+         result = doLMSSetValue("cmi.core.exit", "logout" );
+         result = doLMSSetValue("cmi.core.session_time", "00:05:20.31");
+         result = doLMSSetValue("cmi.suspend_data", "A=1,B=2,C=3");
+
+         // Set the data model status
+         setDMStatus();
+
+         teststatus.innerText = "Status:  Step 1 of SCO Test Completed.  Please Log out and re-login to the LMS.";
+
+         visit++;
+
+         lmsRTEApplet.setCurrentSCOLaunchCount(visit);
+
+         // Have the tester log out of the LMS and log back in to resume testing
+         //alert("Part I of this test SCO is complete.  Please log out of the LMS, then return to this SCO to complete the test.");
+
+         var resultFinish = "";
+         resultFinish = doLMSFinish();
+      }
+      else if(visit == 1)
+      {
+         // second entry into this SCO...
+         teststatus.innerText = "Status:  (Step 2) Testing in progress...";
+
+         writeLogEntry(_OTHER, "");
+         writeLogEntry(_OTHER, "");
+         writeLogEntry(_INFO, "This appears to be the second entry into SCO02");
+
+         // Set up the API for communication
+         setAPIHandle(null);
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         // Initialize communication with the LMS
+         var result = doLMSInitialize();
+         if(scoStatus == "terminated")
+         {
+            return;
+         }
+
+         // get previously set element values to determine if the values match
+         // thereby indicating whether or not the LMS can save data element values
+         // across user (student) sessions...
+         writeLogEntry( _INFO, "Testing to determine LMS ability to save state for mandatory items across sessions");
+
+         // ****************************
+         // cmi.core.lesson_location
+         // ****************************
+         var loc = doLMSGetValue("cmi.core.lesson_location");
+         if(loc != "#paragraph3")
+         {
+            writeLogEntry(_FAILED, "cmi.core.lesson_location value does not match previously set value");
+            allMandatory = false;
+            writeLogEntry(_FAILED, "Assuming that LMSFinish call in step 1 of this SCO did not persist the value");
+            lmsRTEApplet.setApiConformant(false);
+         }
+         else
+         {
+            writeLogEntry(_PASSED, "cmi.core.lesson_location value matches previously set value");
+         }
+
+         // ****************************
+         // cmi.suspend_data
+         // ****************************
+         var suspendData = doLMSGetValue("cmi.suspend_data");
+         if(suspendData != "A=1,B=2,C=3")
+         {
+            writeLogEntry(_FAILED, "cmi.suspend_data value does not match previously set value");
+            allMandatory = false;
+
+            writeLogEntry(_FAILED, "Assuming that LMSFinish call in step 1 of this SCO did not persist the value");
+            lmsRTEApplet.setApiConformant(false);
+         }
+         else
+         {
+            writeLogEntry(_PASSED, "cmi.suspend_data value matches previously set value");
+         }
+
+         // *******************
+         // cmi.core.credit
+         // *******************
+         var credit = doLMSGetValue("cmi.core.credit");
+         doLMSSetValue("cmi.core.lesson_status", "completed");
+         if(credit == "credit")
+         {
+            doLMSSetValue("cmi.core.score.raw", "25");
+         }
+         doLMSSetValue("cmi.core.exit", "" );
+         doLMSSetValue("cmi.core.session_time", "03:01:39.52");
+
+
+         setDMStatus();
+
+         lmsRTEApplet.setCurrentSCOStatus("completed");
+
+         teststatus.innerText = "Status:  Step 2 Complete.  This SCO Test Completed.";
+
+
+         //alert("Completing testing.  Please launch the next SCO.");
+
+         var resultFinish = "";
+         resultFinish = doLMSFinish();
+
+      }
+      else
+      {
+         writeLogEntry(_FAILED, "The SCO launch sequence could not be determined");
+         lmsRTEApplet.setAPIConformant(false);
+         terminateTest();
+      }
+
+   }
+
+
+</script>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course II - SCO #02</title>
+</head>
+<body onload="performTest();">
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course II - SCO #02 <br />
+<br />
+<br />
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</div>
+</font>
+<br />
+<hr color="#353889">
+<br />
+<p>
+</p>
+<p>
+Please view the ADL test suite log for detailed progress and status information
+for this test.
+</p>
+<p>
+This test may take several minutes to complete. Please be patient!
+</p>
+<p>
+This SCO has two parts.  The user is required to exit the course and log out of
+the LMS after part one is completed, and then log back in and resume the course.
+Depending upon the functionality of the LMS, this SCO may or may not be unloaded
+automatically upon conclusion of the testing performed by the SCO. When the SCO
+completes, the status indicator (above) will change.  If the LMS does not
+automatically control navigation and sequencing of SCOs, then please exit the
+LMS after step 1 is completed.   After Step 2 is completed, please go to SCO 05.
+</p>
+<p>
+This Sharable Content Object (SCO) tests the Learning Management System for
+conformance with the Runtime Environment Guidelines as described in the SCORM.
+The purpose of this SCO is to determine if the LMS has the ability to save data
+model element values across user sessions and make the values available upon
+student re-entry. Specifically, this SCO performs the following:
+</p>
+<br />
+<hr color="#353889">
+<br />
+<p align="left">
+<em><strong>Upon first entry</strong>: </em>
+</p>
+<ol>
+   <ol>
+      <li>
+         <div align="left">
+            Validates that this SCO was launched in the appropriate sequence (second)
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Locates the LMS's API implementation
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSInitialize function
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Automatically sets the following values to these data elements:
+         </div>
+      </li>
+      <ul>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.lesson_location", "#paragraph3");
+            </div>
+         </li>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.lesson_status", "incomplete");
+            </div>
+         </li>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.exit", "logout");
+            </div>
+         </li>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.session_time", "00:05:20.31");
+            </div>
+         </li>
+         <li>
+            <div align="left">
+               LMSSetValue("cmi.core.suspend_data", "A=1,B=2,C=3");
+            </div>
+         </li>
+      </ul>
+      <li>
+         <div align="left">
+            Calls the LMSFinish function (Note, there is no explicit call
+            to LMSCommit.)
+         </div>
+      </li>
+   </ol>
+</ol>
+
+<br />
+<hr color="#353889">
+<br />
+<p align="left">
+<strong><em>Upon Second entry: </em></strong>
+</p>
+<ol style="MARGIN-RIGHT: 0px">
+   <ol>
+      <li>
+         <div align="left">
+            Locates the LMS's API implementation
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSInitialize function
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSGetValue function for the previously set datamodel elements and
+            compares them with the expected values.
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Sets several datamodel elements to indicate that the SCO is complete
+         </div>
+      </li>
+      <li>
+         <div align="left">
+            Calls the LMSFinish function
+         </div>
+      </li>
+   </ol>
+</ol>
+<br />
+<hr color="#353889">
+</body>
+</html>

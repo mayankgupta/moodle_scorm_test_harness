@@ -1,0 +1,709 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html>
+<script language="JAVASCRIPT">
+/*******************************************************************************
+** Filename:  SCO05.htm
+**
+** File Description: ADL SCORM Test Course I - SCO 05 - Tests the LMS's:
+**                   Launch Conformance
+**                   Audits Optional Data Model Element Implementation (except
+**                   for cmi.interactions - this is in a separate SCO (SCO06)
+**
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+** 05/17/2001     S.Thropp          PT 874: Removed the <param name = codebase
+**                                  from the applet
+**
+** 08/16/2001     Jeff Falls        PT 1073: Changed the set value of
+**                                  cmi.student_preference.text from 12 to 1 to
+**                                  maintain the alloted range.
+**
+** 10/30/2001     Bill Capone       Updated a debug alert window.
+**
+**
+** 06/21/2011	  Mayank Gupta	    Modified performTest function. For alert 
+**				    compatibility with Selenium WebDriver used 
+**				    in ADL 1.2 Test Script.
+**
+/******************************************************************************/
+</script>
+<head>
+<meta http-equiv="expires" content="Tue, 20 Aug 1999 01:00:00 GMT">
+<meta http-equiv="Pragma" content="no-cache">
+<script language=JAVASCRIPT src="lmsrtefunctions.js">
+</script>
+<script language=JAVASCRIPT>
+
+   // Define data model related variables and constants
+
+   var dataModelMatrix = new Array(24);
+
+   var _R = 0; // read only
+   var _W = 1; // write only
+   var _RW = 2; // both read/write
+
+
+   var apiObj = null;
+
+
+   /*******************************************************************************
+   **
+   ** Function performTest()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function is the main test driver for this SCO.
+   **
+   *******************************************************************************/
+   function performTest()
+   {
+      if(_Debug)
+      {
+         alert("in performTest");
+      }
+
+      scoStatus = "incomplete";
+
+      // ************************************************************
+      // Test to see if the LMS launched the SCO in the correct order
+      // ************************************************************
+      testLaunch(1, 5);
+
+      // testLaunch() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // *********************************************
+      // Initialize the SCO by calling LMSInitialize()
+      // *********************************************
+      var result = doLMSInitialize();
+
+      // doLMSInitialize() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // ******************************************************
+      // Test the optional data model elements for conformance
+      // ******************************************************
+      testDataModelOptional();
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // Set appropriate data model elements to indicate that status
+      doLMSSetValue("cmi.core.lesson_status", "completed");
+      doLMSSetValue("cmi.core.exit", "" );
+      doLMSSetValue("cmi.core.session_time", "03:01:39.52");
+
+      // Set the data model status
+      setDMStatus();
+
+      // Commit all data that was set
+      result = doLMSCommit();
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      lmsRTEApplet.setCurrentSCOStatus("completed");
+      teststatus.innerText = "Status:  This SCO Test Completed.";
+      // note the above text gets overwritten if LMSFinish fails.
+
+      //alert("Completing testing.  Please launch the next SCO.");
+
+      // Indicate to the LMS that the SCO is done communicating
+      result = doLMSFinish();
+
+   }
+
+   /***************************************************************************
+   ** Function initializeDataModelMatrix()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function initializes an array of arrays (javascript doesn't have
+   ** multi-dimensional arrays) that serves as a data structure to house
+   ** information about the CMI datamodel.  It uses a array called
+   ** dataModelMatrix which is declared global to this page.
+   ** The matrix rows represent each possible data model element.  The arrays
+   ** of columns are defined as follows:
+   **     column   Description
+   **       0      Cmi data model element name
+   **       1      Accessibility from the SCO perspective:
+   **                    _R (SCO can Read only)
+   **                    _W (SCO can Write only)
+   **                    _RW (SCO can Read/Write)
+   **       2      Mandatory/Optional (true=mandatory / false=optional)
+   **       3      Value written (or to write) to the LMS (if writeable)
+   **       4      Element is found to be implemented by the LMS (true/false)
+   **
+   ***************************************************************************/
+   function initializeDataModelMatrix()
+   {
+
+      if(_Debug)
+      {
+         alert("in initializeDataModelMatrix()");
+      }
+
+      for(var j=0;j<dataModelMatrix.length;j++)
+      {
+         dataModelMatrix[j] = new Array(5);
+         dataModelMatrix[j][2] = false;  // Initialize to optional
+         dataModelMatrix[j][4] = false;   // Initialize to not implemented.
+      }
+
+
+      dataModelMatrix[0][0] = "cmi.core._children";
+      dataModelMatrix[0][1] = _R;
+
+
+      dataModelMatrix[1][0] = "cmi.core.score._children";
+      dataModelMatrix[1][1] = _R;
+
+      dataModelMatrix[2][0] = "cmi.core.score.max";
+      dataModelMatrix[2][1] = _RW;
+      dataModelMatrix[2][3] = "100";
+
+      dataModelMatrix[3][0] = "cmi.core.score.min";
+      dataModelMatrix[3][1] = _RW;
+      dataModelMatrix[3][3] = "0";
+
+      dataModelMatrix[4][0] = "cmi.core.lesson_mode";
+      dataModelMatrix[4][1] = _R;
+
+
+      dataModelMatrix[5][0] = "cmi.comments";
+      dataModelMatrix[5][1] = _RW;
+      dataModelMatrix[5][3] = "These are my comments";
+
+
+      dataModelMatrix[6][0] = "cmi.comments_from_lms";
+      dataModelMatrix[6][1] = _R;
+
+      dataModelMatrix[7][0] = "cmi.objectives._children";
+      dataModelMatrix[7][1] = _R;
+
+      dataModelMatrix[8][0] = "cmi.objectives._count";
+      dataModelMatrix[8][1] = _R;
+
+
+      dataModelMatrix[9][0] = "cmi.objectives.n.id";
+      dataModelMatrix[9][1] = _RW;
+      dataModelMatrix[9][3] = "X99";
+
+
+      dataModelMatrix[10][0] = "cmi.objectives.n.score._children";
+      dataModelMatrix[10][1] = _R;
+
+      dataModelMatrix[11][0] = "cmi.objectives.n.score.raw";
+      dataModelMatrix[11][1] = _RW;
+      dataModelMatrix[11][3] = "75";
+
+      dataModelMatrix[12][0] = "cmi.objectives.n.score.max";
+      dataModelMatrix[12][1] = _RW;
+      dataModelMatrix[12][3] = "100";
+
+      dataModelMatrix[13][0] = "cmi.objectives.n.score.min";
+      dataModelMatrix[13][1] = _RW;
+      dataModelMatrix[13][3] = "00";
+
+      dataModelMatrix[14][0] = "cmi.objectives.n.status";
+      dataModelMatrix[14][1] = _RW;
+      dataModelMatrix[14][3] = "completed";
+
+      dataModelMatrix[15][0] = "cmi.student_data._children";
+      dataModelMatrix[15][1] = _R;
+
+      dataModelMatrix[16][0] = "cmi.student_data.mastery_score";
+      dataModelMatrix[16][1] = _R;
+
+      dataModelMatrix[17][0] = "cmi.student_data.max_time_allowed";
+      dataModelMatrix[17][1] = _R;
+
+      dataModelMatrix[18][0] = "cmi.student_data.time_limit_action";
+      dataModelMatrix[18][1] = _R;
+
+      dataModelMatrix[19][0] = "cmi.student_preference._children";
+      dataModelMatrix[19][1] = _R;
+
+      dataModelMatrix[20][0] = "cmi.student_preference.audio";
+      dataModelMatrix[20][1] = _RW;
+      dataModelMatrix[20][3] = "9";
+
+      dataModelMatrix[21][0] = "cmi.student_preference.language";
+      dataModelMatrix[21][1] = _RW;
+      dataModelMatrix[21][3] = "US/English";
+
+      dataModelMatrix[22][0] = "cmi.student_preference.speed";
+      dataModelMatrix[22][1] = _RW;
+      dataModelMatrix[22][3] = "5";
+
+      dataModelMatrix[23][0] = "cmi.student_preference.text";
+      dataModelMatrix[23][1] = _RW;
+      dataModelMatrix[23][3] = "1";
+
+      if(_Debug)
+      {
+         alert("done initializing dataModelMatrix");
+      }
+
+
+   }
+
+
+   /*******************************************************************************
+   ** function testDataModelOptional()
+   ** inputs:  None
+   ** outputs: None
+   ** purpose:
+   **  This function determines if all optional data model elements (except
+   **  interactions) that are implemented by the LMS, are implemented correctly
+   *******************************************************************************/
+   function testDataModelOptional()
+   {
+
+      if(_Debug)
+      {
+         alert("in testDataModelOptional()");
+      }
+      writeLogEntry(_INFO, "Beginning data model optional element implementation auditing.");
+
+      initializeDataModelMatrix();
+
+      // ***********************
+      // Test cmi.core.score.max
+      // ***********************
+      testSetValue(dataModelMatrix[2][0], dataModelMatrix[2][3], 2);
+      rtnVal = testGetValue(dataModelMatrix[2][0], 2);
+      // Convert string into its numeric equivalent.
+      rtnVal = parseFloat(rtnVal);
+      compareReadWriteValues(rtnVal, 2);
+
+      // ***********************
+      // Test cmi.core.score.min
+      // ***********************
+      testSetValue(dataModelMatrix[3][0], dataModelMatrix[3][3],3);
+      rtnVal = testGetValue(dataModelMatrix[3][0], 3);
+      // Convert string into its numeric equivalent.
+      rtnVal = parseFloat(rtnVal);
+      compareReadWriteValues(rtnVal, 3);
+
+
+      // ***********************
+      // test cmi.core.lesson_mode
+      // ***********************
+      rtnVal = testGetValue(dataModelMatrix[4][0], 4);
+
+
+      // ***********************************************************
+      // test cmi.comments    (test the "append" behavior -
+      // The LMS must append comments, as opposed to overwriting on
+      // subsequent sets.
+      // ***********************************************************
+      testSetValue(dataModelMatrix[5][0], dataModelMatrix[5][3], 5);
+      testSetValue(dataModelMatrix[5][0], " " + dataModelMatrix[5][3]+ " again", 5);
+
+      rtnVal = testGetValue(dataModelMatrix[5][0], 5);
+      var expectedRtn = dataModelMatrix[5][3] + " " + dataModelMatrix[5][3] + " again";
+      // check - only if the element is implemented correctly
+      if(dataModelMatrix[5][4] == true)
+      {
+         if( expectedRtn != rtnVal)
+         {
+            allOptional = false;
+
+            var logMsg = "The LMS returned a value that is different than the ";
+            logMsg += "concatenation of the previously set values for ";
+
+            logMsg += " <b>Optional</b> element ";
+
+            logMsg += dataModelMatrix[5][0];
+            //logMsg += "<br>Expected value: &quot;" + expectedRtn;
+            //logMsg += "&quot;<br>LMS Returned: &quot;" + rtnVal;
+            //logMsg += "&quot;";
+            writeLogEntry(_FAILED, logMsg);
+         }
+      }
+
+      // ***********************
+      // test cmi.comments_from_lms
+      // ***********************
+      rtnVal = testGetValue(dataModelMatrix[6][0], 6);
+
+
+      // ***********************
+      // test cmi.objectives._children
+      // ***********************
+      var objChildren = testGetValue(dataModelMatrix[7][0], 7);
+
+      // ***********************
+      // test cmi.objectives._count
+      // ***********************
+      var objCount = testGetValue(dataModelMatrix[8][0], 8);
+      // Convert string into its numeric equivalent.
+      objCount = parseInt(objCount);
+      if(dataModelMatrix[8][4] == true)
+      {
+         if(objCount != "0")
+         {
+            allOptional = false;
+            var logMsg = "cmi.objectives._count returned ";
+            logMsg += objCount;
+            logMsg += ".  No Objectives are defined yet.";
+            logMsg += " cmi.objectives._count should be zero (0)";
+            writeLogEntry(_FAILED, logMsg);
+         }
+      }
+
+      // Attempt to add 4 objectives to the list
+      for(var objIdx=0; objIdx<4; objIdx++)
+      {
+         // test cmi.objectives.n.id
+         testSetValue("cmi.objectives."+objIdx+".id", dataModelMatrix[9][3]+objIdx, 9);
+         rtnVal = testGetValue("cmi.objectives."+objIdx+".id", 9);
+
+         // compare set value and get result
+         if(dataModelMatrix[9][4] == true)
+         {
+            if(dataModelMatrix[9][3]+objIdx != rtnVal)
+            {
+               var logMsg = "The LMS returned a value that is different that the ";
+               logMsg += "previously set value for ";
+               logMsg += " for <b>Optional</b> element ";
+               allOptional = false;
+               logMsg += dataModelMatrix[9][0];
+               writeLogEntry(_FAILED, logMsg);
+            }
+         }
+
+
+         // *************************************
+         // test cmi.objectives.n.score._children
+         // *************************************
+         rtnVal = testGetValue("cmi.objectives."+objIdx+".score._children", 10);
+
+         // *************************************
+         // test cmi.objectives.n.score.raw
+         // *************************************
+         testSetValue("cmi.objectives."+objIdx+".score.raw", dataModelMatrix[11][3], 11);
+         rtnVal = testGetValue("cmi.objectives."+objIdx+".score.raw", 11);
+         // Convert string into its numeric equivalent.
+         rtnVal = parseFloat(rtnVal);
+         compareReadWriteValues(rtnVal, 11);
+
+         // *************************************
+         // test cmi.objectives.n.score.max
+         // *************************************
+         testSetValue("cmi.objectives."+objIdx+".score.max", dataModelMatrix[12][3], 12);
+         rtnVal = testGetValue("cmi.objectives."+objIdx+".score.max", 12);
+         // Convert string into its numeric equivalent.
+         rtnVal = parseFloat(rtnVal);
+         compareReadWriteValues(rtnVal, 12);
+
+         // *************************************
+         // test cmi.objectives.n.score.min
+         // *************************************
+         testSetValue("cmi.objectives."+objIdx+".score.min", dataModelMatrix[13][3], 13);
+         rtnVal = testGetValue("cmi.objectives."+objIdx+".score.min", 13);
+         // Convert string into its numeric equivalent.
+         rtnVal = parseFloat(rtnVal);
+         compareReadWriteValues(rtnVal, 13);
+
+         // *************************************
+         // test cmi.objectives.n.status
+         // *************************************
+         testSetValue("cmi.objectives."+objIdx+".status", dataModelMatrix[14][3], 14);
+         rtnVal = testGetValue("cmi.objectives."+objIdx+".status", 14);
+         compareReadWriteValues(rtnVal, 14);
+
+      }
+
+      // *************************************
+      // check the resulting count
+      // *************************************
+      if(objChildren != "")
+      {
+         objCount = testGetValue(dataModelMatrix[8][0], 8);
+         if(dataModelMatrix[8][4] == true)
+         {
+            if(objCount != "4")
+            {
+               allOptional = false;
+
+               var logMsg = "cmi.objectives._count returned ";
+               logMsg += objCount;
+               logMsg += " cmi.objectives._count should be 4 (four)";
+               writeLogEntry(_FAILED,logMsg);
+            }
+         }
+      }
+
+      // *************************************
+      // Test cmi.student_data category
+      // *************************************
+      var studentDataChildren = testGetValue(dataModelMatrix[15][0], 15);
+
+      var masteryScore = testGetValue(dataModelMatrix[16][0], 16);
+      var maxTimeAllowed = testGetValue(dataModelMatrix[17][0], 17);
+      var timeLimitAction = testGetValue(dataModelMatrix[18][0], 18);
+
+      // ***********************************************
+      // if the operator claimed that Course I
+      // was imported using the supplied Content Package
+      // ***********************************************
+      if(lmsRTEApplet.getCourseOneCPImport() == true)
+      {
+         var logMsg;
+         // if cmi.student_data.mastery_score is implemented
+         if(dataModelMatrix[16][4] == true)
+         {
+            // determine if the value for the element matches the CP defined value
+            var cpMasteryScore = lmsRTEApplet.getSCOCPMasteryScore(1,4);
+            if(parseFloat(masteryScore) != parseFloat(cpMasteryScore))
+            {
+               logMsg = "The cmi.student_data.mastery_score value &quot;";
+               logMsg += masteryScore;
+               logMsg += "&quot; does not match the &lt;adlcp:masteryscore&gt; defined in ";
+               logMsg += "the Content Package for this SCO &quot;";
+               logMsg += cpMasteryScore +"&quot;";
+               writeLogEntry(_WARNING, logMsg);
+               allOptional = false;
+            }
+            else
+            {
+               logMsg = "The cmi.student_data.mastery_score value &quot;";
+               logMsg += masteryScore;
+               logMsg += "&quot; matches the &lt;masteryscore&gt; defined in the Content Package ";
+               logMsg += "for this SCO";
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+
+         // ****************************************************
+         // if cmi.student_data.max_time_allowed is implemented
+         // ****************************************************
+         if(dataModelMatrix[17][4] == true)
+         {
+            // determine if the value for the element matches the CP defined value
+            var cpMaxTimeAllowed = lmsRTEApplet.getSCOCPMaxTimeAllowed(1,4);
+            if(timeCompare(maxTimeAllowed, cpMaxTimeAllowed) != true)
+            {
+               logMsg = "The cmi.student_data.max_time_allowed value &quot;";
+               logMsg += maxTimeAllowed;
+               logMsg += "&quot; does not match the &lt;adlcp:maxtimeallowed&gt; defined in ";
+               logMsg += "the Content Package for this SCO &quot;";
+               logMsg += cpMaxTimeAllowed +"&quot;";
+               writeLogEntry(_WARNING, logMsg);
+               allOptional = false;
+            }
+            else
+            {
+               logMsg = "The cmi.student_data.max_time_allowed value &quot;";
+               logMsg += maxTimeAllowed;
+               logMsg += "&quot; matches the &lt;adlcp:maxtimeallowed&gt; defined in the Content Package ";
+               logMsg += "for this SCO";
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+
+         // ****************************************************
+         // if cmi.student_data.time_limit_action is implemented
+         // ****************************************************
+         if(dataModelMatrix[18][4] == true)
+         {
+            // determine if the value for the element matches the CP defined value
+            var cpTimeLimitAction = lmsRTEApplet.getSCOCPTimeLimitAction(1,4);
+            if(timeLimitAction != cpTimeLimitAction)
+            {
+               logMsg = "The cmi.student_data.time_limit_action value &quot;";
+               logMsg += timeLimitAction;
+               logMsg += "&quot; does not match the &lt;adlcp:timelimitaction&gt; defined in ";
+               logMsg += "the Content Package for this SCO &quot;";
+               logMsg += cpTimeLimitAction +"&quot;";
+               writeLogEntry(_WARNING, logMsg);
+               allOptional = false;
+            }
+            else
+            {
+               logMsg = "The cmi.student_data.time_limit_action value &quot;";
+               logMsg += timeLimitAction;
+               logMsg += "&quot; matches the &lt;adlcp:timelimitaction&gt; defined in the Content Package ";
+               logMsg += "for this SCO";
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+
+
+      }
+
+      // **************************************
+      // test cmi.student_preference._children
+      // **************************************
+      var studentPreferenceChildren = testGetValue(dataModelMatrix[19][0], 19);
+
+      // **************************************
+      // test cmi.student_preference.audio
+      // **************************************
+      testSetValue(dataModelMatrix[20][0], dataModelMatrix[20][3], 20);
+      rtnVal = testGetValue(dataModelMatrix[20][0], 20);
+      // Convert string into its numeric equivalent.
+      rtnVal = parseInt(rtnVal);
+      compareReadWriteValues(rtnVal, 20);
+
+      // **************************************
+      // test cmi.student_preference.language
+      // **************************************
+      testSetValue(dataModelMatrix[21][0], dataModelMatrix[21][3], 21);
+      rtnVal = testGetValue(dataModelMatrix[21][0], 21);
+      compareReadWriteValues(rtnVal, 21);
+
+
+      // **************************************
+      // test cmi.student_preference.speed
+      // **************************************
+      testSetValue(dataModelMatrix[22][0], dataModelMatrix[22][3], 22);
+      rtnVal = testGetValue(dataModelMatrix[22][0], 22);
+      // Convert string into its numeric equivalent.
+      rtnVal = parseInt(rtnVal);
+      compareReadWriteValues(rtnVal, 22);
+
+
+      // **************************************
+      // test cmi.student_preference.text
+      // **************************************
+      testSetValue(dataModelMatrix[23][0], dataModelMatrix[23][3], 23);
+      rtnVal = testGetValue(dataModelMatrix[23][0], 23);
+      // Convert string into its numeric equivalent.
+      rtnVal = parseInt(rtnVal);
+      compareReadWriteValues(rtnVal, 23);
+
+
+      return;
+
+      // END OF DATA MODEL TESTING}
+   }
+
+</script>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course I - SCO #05</title>
+</head>
+<body onload="performTest();">
+
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course I - SCO #05 <br />
+<br />
+<br />
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</div>
+</font>
+<br />
+<hr color="#353889">
+<br />
+<p>
+</p>
+<p>
+Please view the ADL test  suite log for detailed progress and status information
+for this test.
+</p>
+<p>
+This test may take several minutes to complete. Please be patient!
+</p>
+<p>
+Depending upon the functionality of the LMS, this SCO may or may not be unloaded
+automatically upon conclusion of the testing performed by the SCO. When the SCO
+completes, the status above will change to "<strong><em>This SCO Test Completed.</em></strong>
+".  If the LMS does NOT automatically sequence SCO's, then please navigate to
+the next SCO manually when this status is displayed.
+</p>
+<p>
+This Sharable Content Object (SCO) tests the Learning Management System for
+conformance with the Runtime Environment Guidelines as described in the SCORM.
+Specifically, this SCO performs the following:
+</p>
+<ol>
+   <ol>
+      <li>
+         Validates that this SCO was launched in the appropriate sequence (fifth)
+      <li>
+         Locates the LMS's API implementation
+      <li>
+         Calls the LMSInitialize function
+      <li>
+         Determines which optional data model elements are implemented, and if they are
+         implemented correctly
+      <li>
+         Calls the LMSCommit function
+      <li>
+         Calls the LMSFinish function
+      </li>
+   </ol>
+</ol>
+<br />
+<hr color="#353889">
+</body>
+</html>

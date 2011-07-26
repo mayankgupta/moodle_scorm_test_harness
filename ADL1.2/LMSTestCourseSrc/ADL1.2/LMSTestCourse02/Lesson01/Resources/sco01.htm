@@ -1,0 +1,438 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html>
+<script language="JAVASCRIPT">
+/*******************************************************************************
+** Filename:  sco01.htm
+**
+** File Description: ADL SCORM Test Course II - SCO 01 - Tests the LMS's:
+**                   Launch Conformance
+**                   Data Model Elements cmi.core.credit vocabulary
+**                   and cmi.core.lesson_mode vocabulary
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+** 05/17/2001     S.Thropp          PT 874: Removed the <param name = codebase
+**                                  from the applet
+**
+** 10/5/2001      Bill Capone       PT 1217 & 1232: Added call to newly created
+**                                  function nameCompare().  Modified a string
+**                                  to hold "no-credit" versus "no credit".
+**
+** 11/15/2001     S. Thropp         Changed the log statements to print out
+**                                  the correct manifest names for the ADL
+**                                  namespaced elements.  Also added to the
+**                                  HTML portion of the file, the indication
+**                                  of what ADL Namespace manifest items are
+**                                  being checked.
+**
+** 11/16/2001     S. Thropp         Fixed the logic dealing with the return from
+**                                  nameCompare.
+**
+** 01/08/2002     Bill Capone       Changed write log entry from a warning to
+**                                  failed when the student_name does not match
+**                                  the student_name entered into the system.
+**                                  This is as per Perfect Tracker 1366.
+**
+** 01/28/2002     S. Thropp         General formatting changes and added comments.
+**
+** 06/21/2011	  Mayank Gupta	    Modified performTest function. For alert 
+**				    compatibility with Selenium WebDriver used 
+**				    in ADL 1.2 Test Script.
+**
+/*******************************************************************************/
+</script>
+<head>
+<meta http-equiv="expires" content="Tue, 20 Aug 1999 01:00:00 GMT">
+<meta http-equiv="Pragma" content="no-cache">
+<script language=JAVASCRIPT src="lmsrtefunctions.js">
+</script>
+<script language=JAVASCRIPT>
+
+   var apiObj = null;
+
+   /*******************************************************************************
+   **
+   ** Function performTest()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function is the main test driver for this SCO.
+   **
+   *******************************************************************************/
+   function performTest()
+   {
+
+      if(_Debug)
+      {
+         alert("in performTest()");
+      }
+      scoStatus = "incomplete";
+
+      // Test to make sure the LMS launced this SCO in the appropriate order
+      testLaunch(2, 1);
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // Initialize communication with the LMS
+      var result = doLMSInitialize();
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      var logMsg;
+      var errCode;
+
+      // **************************
+      // Test cmi.core.student_name
+      // **************************
+      var studentName = doLMSGetValue("cmi.core.student_name");
+      if(studentName != "")
+      {
+         var instructedStudentName = lmsRTEApplet.getStudentName(1);
+         var nameRtn = nameCompare(studentName, instructedStudentName)
+         if(nameRtn == false)
+         {
+            var logMsg = "The student name returned by the LMS is incorrect.";
+            logMsg += "  The student name should be &quot;";
+            logMsg += instructedStudentName+"&quot;";
+            writeLogEntry(_FAILED, logMsg);
+            allMandatory = false;
+         }
+      }
+
+      // If the operator indicated that the LMS supports "no-credit"
+      // for cmi.core.credit, validate the return value
+
+      var creditSupport = lmsRTEApplet.getClaimCreditSupport();
+
+      if(creditSupport == true)
+      {
+         var creditValue = doLMSGetValue("cmi.core.credit");
+         var errCode = doLMSGetLastError();
+         if(errCode != _NoError)
+         {
+            allMandatory = false;
+         }
+         else
+         {
+            if(creditValue != "no-credit")
+            {
+               var logMsg = "The operator indicated that the LMS supports both ";
+               logMsg += "&quot;credit&quot; and &quot;no-credit&quot;.";
+               logMsg += "  Expected LMSGetValue(&quot;cmi.core.credit&quot;)";
+               logMsg += " to return a value of &quot;no-credit&quot;";
+               writeLogEntry(_WARNING, logMsg);
+            }
+         }
+      }
+
+      // If the operator indicated that the LMS supports "browse"
+      // for cmi.core.lesson_mode, validate the return value
+      var modeSupport = lmsRTEApplet.getClaimModeSupport();
+
+      if(modeSupport == true)
+      {
+         var modeValue = doLMSGetValue("cmi.core.lesson_mode");
+         errCode = doLMSGetLastError();
+         if(errCode != _NoError)
+         {
+            allOptional = false;
+         }
+         else
+         {
+            if(modeValue != "browse")
+            {
+               var logMsg = "The operator indicated that the LMS supports ";
+               logMsg += "&quot;normal&quot; and &quot;browse&quot;.";
+               logMsg += "  Expected LMSGetValue(&quot;cmi.core.lesson_mode&quot;)";
+               logMsg += " to return a value of &quot;browse&quot;";
+               writeLogEntry(_WARNING, logMsg);
+            }
+         }
+      }
+
+      // check the data model values that are supposed to be initialized from
+      // the Content Package, if the operator claimed that Course II was
+      // imported using the supplied Content Package.
+
+      if(lmsRTEApplet.getCourseTwoCPImport() == true)
+      {
+         var logMsg;
+
+         // *******************************************************************
+         // Get the cmi.launch_data.  This value should have been initialized
+         // from the manifest element <adlcp:datafromlms> found in the manifest
+         // *******************************************************************
+         var launchData = doLMSGetValue("cmi.launch_data");
+         var error = doLMSGetLastError();
+         if(error == _NoError)
+         {
+            // Get the launch data that is expected
+            var cpLaunchData = lmsRTEApplet.getSCOCPLaunchData(2, 0);
+
+            // Compare the launch data that is expected to the launch data
+            // initialized by the LMS from the manifest
+            if(launchData != cpLaunchData)
+            {
+               // LMS did not set up the cmi.launch_data correctly
+               logMsg = "The LMS did not return a value for cmi.core.launch_data equal ";
+               logMsg += "to the &lt;adlcp:datafromlms&gt; value provided in the Content Package for this SCO.<br>";
+               logMsg += "Content Package &lt;adlcp:datafromlms&gt; value: &quot;"+cpLaunchData+"&quot;<br>";
+               logMsg += "LMS returned: &quot;"+launchData+"&quot;";
+
+               writeLogEntry(_FAILED, logMsg);
+               allMandatory = false;
+            }
+            else
+            {
+               // LMS set up the cmi.launch_data correctly
+               logMsg = "The LMS returned cmi.core.launch_data equal ";
+               logMsg += "to the &lt;adlcp:datafromlms&gt; value provided in the Content Package for this SCO.<br>";
+               logMsg += "Content Package &lt;adlcp:datafromlms&gt; value: &quot;"+cpLaunchData+"&quot;<br>";
+               logMsg += "LMS returned: &quot;"+launchData+"&quot;";
+
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+
+         // ************************************************
+         // if cmi.student_data.mastery_score is implemented
+         // ************************************************
+         var masteryScore = doLMSGetValue("cmi.student_data.mastery_score");
+         error = doLMSGetLastError();
+         if(error == _NoError)
+         {
+            // determine if the value for the element matches the Content Package defined value
+            var cpMasteryScore = lmsRTEApplet.getSCOCPMasteryScore(2,0);
+
+            if(parseFloat(masteryScore) != parseFloat(cpMasteryScore))
+            {
+               // LMS did not set up the cmi.student_data.mastery_score correctly
+               logMsg = "The cmi.student_data.mastery_score value &quot;";
+               logMsg += masteryScore;
+               logMsg += "&quot; does not match the &lt;adlcp:masteryscore&gt; defined in ";
+               logMsg += "the Content Package for this SCO &quot;";
+               logMsg += cpMasteryScore +"&quot;";
+               writeLogEntry(_WARNING, logMsg);
+               allOptional = false;
+            }
+            else
+            {
+               // LMS set up the cmi.student_data.mastery_score correctly
+               logMsg = "The cmi.student_data.mastery_score value &quot;";
+               logMsg += masteryScore;
+               logMsg += "&quot; matches the &lt;adlcp:masteryscore&gt; defined in the Content Package ";
+               logMsg += "for this SCO";
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+
+         // ***************************************************
+         // if cmi.student_data.max_time_allowed is implemented
+         // ***************************************************
+         var maxTimeAllowed = doLMSGetValue("cmi.student_data.max_time_allowed");
+         error = doLMSGetLastError();
+         if(error == _NoError)
+         {
+            // determine if the value for the element matches the CP defined value
+            var cpMaxTimeAllowed = lmsRTEApplet.getSCOCPMaxTimeAllowed(2,0);
+            if(timeCompare(maxTimeAllowed, cpMaxTimeAllowed) != true)
+            {
+               // LMS did not set up the cmi.student_data.max_time_allowed correctly
+               logMsg = "The cmi.student_data.max_time_allowed value &quot;";
+               logMsg += maxTimeAllowed;
+               logMsg += "&quot; does not match the &lt;adlcp:maxtimeallowed&gt; defined in ";
+               logMsg += "the Content Package for this SCO &quot;";
+               logMsg += cpMaxTimeAllowed +"&quot;";
+               writeLogEntry(_WARNING, logMsg);
+               allOptional = false;
+            }
+            else
+            {
+               // LMS set up the cmi.student_data.max_time_allowed correctly
+               logMsg = "The cmi.student_data.max_time_allowed value &quot;";
+               logMsg += maxTimeAllowed;
+               logMsg += "&quot; matches the &lt;adlcp:maxtimeallowed&gt; defined in the Content Package ";
+               logMsg += "for this SCO";
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+
+         // ****************************************************
+         // if cmi.student_data.time_limit_action is implemented
+         // ****************************************************
+         var timeLimitAction = doLMSGetValue("cmi.student_data.time_limit_action");
+         error = doLMSGetLastError();
+         if(error == _NoError)
+         {
+            // determine if the value for the element matches the CP defined value
+            var cpTimeLimitAction = lmsRTEApplet.getSCOCPTimeLimitAction(2,0);
+            if(timeLimitAction != cpTimeLimitAction)
+            {
+                // LMS did not set up the cmi.student_data.time_limit_action correctly
+               logMsg = "The cmi.student_data.time_limit_action value &quot;";
+               logMsg += timeLimitAction;
+               logMsg += "&quot; does not match the &lt;adlcp:timelimitaction&gt; defined in ";
+               logMsg += "the Content Package for this SCO &quot;";
+               logMsg += cpTimeLimitAction +"&quot;";
+               writeLogEntry(_WARNING, logMsg);
+               allOptional = false;
+            }
+            else
+            {
+                // LMS set up the cmi.student_data.time_limit_action correctly
+               logMsg = "The cmi.student_data.time_limit_action value &quot;";
+               logMsg += timeLimitAction;
+               logMsg += "&quot; matches the &lt;adlcp:timelimitaction&gt; defined in the Content Package ";
+               logMsg += "for this SCO";
+               writeLogEntry(_PASSED, logMsg);
+            }
+         }
+      }
+
+      // Set the Data Model status
+      setDMStatus();
+
+
+      doLMSSetValue("cmi.core.lesson_status", "completed");
+      doLMSSetValue("cmi.core.exit", "");
+      doLMSSetValue("cmi.core.session_time", "00:00:30");
+
+      // Have the LMS persist all data that was set
+      result = doLMSCommit();
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      teststatus.innerText = "Status:  This SCO Test Completed.";
+      // note the above text gets overwritten if LMSFinish fails.
+
+      //alert("Completing testing.  Please launch the next SCO.");
+
+      lmsRTEApplet.setCurrentSCOStatus("completed");
+
+      // Invoke the LMSFinish() to stop communication
+      result = doLMSFinish();
+
+   }
+
+
+</script>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course II - SCO #01</title>
+</head>
+<body onload="performTest();">
+
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course II - SCO #01 <br />
+<br />
+<br />
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</div>
+</font>
+<br />
+<hr color="#353889" />
+<br />
+<p>
+Please view the ADL test  suite log for detailed progress and status information
+for this test.
+</p>
+<p>
+This test may take several minutes to complete.
+</p>
+<p>
+Depending upon the functionality of the LMS, this SCO may or may not be unloaded
+automatically upon conclusion of the testing performed by the SCO. When the SCO
+completes, the status above will change to "<strong><em>This SCO Test Completed.</em></strong>
+".  If the LMS does NOT automatically sequence SCO's, then please navigate to
+the next SCO manually when this status is displayed.
+</p>
+<p>
+This Sharable Content Object (SCO) tests the Learning Management System for
+conformance with the Runtime Environment Guidelines as described in the SCORM.
+Specifically, this SCO performs the following:
+</p>
+<ol>
+   <ol>
+      <li>Validates that this SCO was launched in the appropriate sequence (first)</li>
+      <li>Locates the LMS's API Adapter implementation.</li>
+      <li>Calls the LMSInitialize function.</li>
+      <li>Determines if the LMS supports the ability for a student to experience
+          a SCO for "no-credit" (i.e. cmi.core.credit value of "no-credit".</li>
+      <li>Determines if the LMS supports the ability for a student to experience
+          a SCO in browse" mode (i.e. cmi.core.lesson_mode value of "browse").</li>
+      <li>Determines whether or not the LMS supports the following ADL Namespace
+          element:
+            <li>datafromlms - cmi.launch_data - Mandatory data model element</li>
+            <li>masteryscore - cmi.student_data.mastery_score - Optional data model element</li>
+            <li>maxtimeallowed - cmi.student_data.max_time_allowed - Optional data model element</li>
+            <li>timelimitaction - cmi.student_data.time_limit_action - Optional data model element</li>
+      </li>
+      <li>Calls the LMSCommit function.</li>
+      <li>Calls the LMSFinish function.</li>
+      </li>
+   </ol>
+</ol>
+<br />
+<hr color="#353889" />
+</body>
+</html>

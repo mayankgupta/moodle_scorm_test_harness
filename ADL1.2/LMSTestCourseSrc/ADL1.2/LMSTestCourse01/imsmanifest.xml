@@ -1,0 +1,193 @@
+<?xml version = "1.0"?>
+<manifest identifier="LMSTestCourse01_Manifest" version="1.2"
+       xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+       xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd
+                           http://www.imsglobal.org/xsd/imsmd_rootv1p2p1 imsmd_rootv1p2p1.xsd
+                           http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd">
+
+   <organizations default = "Course001">
+      <organization identifier = "Course001">
+         <title>LMS Test Suite - Course 1</title>
+         <item identifier="I_LESSON01">
+            <title>LMS Test Suite - Lesson 1</title>
+            <item identifier="I_SCO1" identifierref="SCO01">
+               <title>LMS Test Suite - SCO 1</title>
+               <adlcp:datafromlms>SCO1LaunchData</adlcp:datafromlms>
+            </item>
+            <item identifier = "I_SCO2" identifierref="SCO02">
+               <title>LMS Test Suite - SCO 2</title>
+               <adlcp:prerequisites type = "aicc_script">I_SCO1</adlcp:prerequisites>
+            </item>
+            <item identifier = "I_SCO3" identifierref="SCO03">
+               <title>LMS Test Suite - SCO 3</title>
+               <adlcp:prerequisites type = "aicc_script">I_SCO2</adlcp:prerequisites>
+            </item>
+            <item identifier = "I_SCO4" identifierref="SCO04">
+               <title>LMS Test Suite - SCO 4</title>
+               <adlcp:prerequisites type = "aicc_script">I_SCO3</adlcp:prerequisites>
+            </item>
+            <item identifier = "I_SCO5" identifierref="SCO05">
+               <title>LMS Test Suite - SCO 5</title>
+               <adlcp:prerequisites type = "aicc_script">I_SCO4</adlcp:prerequisites>
+               <adlcp:maxtimeallowed>00:00:05</adlcp:maxtimeallowed>
+               <adlcp:timelimitaction>continue,message</adlcp:timelimitaction>
+               <adlcp:masteryscore>80</adlcp:masteryscore>
+            </item>
+            <item identifier = "I_SCO6" identifierref="SCO06">
+               <title>LMS Test Suite - SCO 6</title>
+               <adlcp:prerequisites type = "aicc_script">I_SCO5</adlcp:prerequisites>
+            </item>
+            <item identifier = "I_SCO7" identifierref="SCO07">
+               <title>LMS Test Suite - SCO 7</title>
+               <adlcp:prerequisites type = "aicc_script">I_SCO6</adlcp:prerequisites>
+            </item>
+            <item identifier = "I_SCO8" identifierref="SCO08">
+               <title>LMS Test Suite - SCO 8</title>
+               <adlcp:prerequisites type = "aicc_script">I_SCO7</adlcp:prerequisites>
+            </item>
+            <item identifier = "I_SCO9" identifierref="SCO09">
+               <title>LMS Test Suite - SCO 9</title>
+               <adlcp:prerequisites type = "aicc_script">I_SCO8</adlcp:prerequisites>
+               <adlcp:maxtimeallowed>02:00:00.00</adlcp:maxtimeallowed>
+               <adlcp:timelimitaction>continue,message</adlcp:timelimitaction>
+               <adlcp:datafromlms>SCORMTROOPERS</adlcp:datafromlms>
+               <adlcp:masteryscore>80</adlcp:masteryscore>
+            </item>
+            <metadata>
+               <schema>ADL SCORM</schema>
+               <schemaversion>1.2</schemaversion>
+               <adlcp:location>Lesson01/Lesson01.xml</adlcp:location>
+            </metadata>
+         </item>
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>LMSTestCourse01.xml</adlcp:location>
+         </metadata>
+
+      </organization>
+   </organizations>
+   <resources>
+
+      <resource identifier="SCO01" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco01.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco01.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco01.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO02" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco%2002.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco%2002.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco%2002.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO03" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco03.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco03.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco03.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO04" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco04.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco04.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco04.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO05" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco05.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco05.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco05.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO06" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco06.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco06.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco06.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO07" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco07.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco07.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco07.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO08" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco08.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco08.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco08.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="SCO09" type="webcontent"
+                adlcp:scormtype="sco" href="Lesson01/Resources/sco09.htm">
+         <metadata>
+            <schema>ADL SCORM</schema>
+            <schemaversion>1.2</schemaversion>
+            <adlcp:location>Lesson01/Meta-data/sco09.xml</adlcp:location>
+         </metadata>
+         <file href="Lesson01/Resources/sco09.htm"/>
+         <dependency identifierref="LMSFNCTS01"/>
+         <dependency identifierref="LMSTESTCOURSEJAR01"/>
+      </resource>
+
+      <resource identifier="LMSFNCTS01" type="webcontent"
+                adlcp:scormtype="asset">
+         <file href="Lesson01/Resources/lmsrtefunctions.js" />
+      </resource>
+
+      <resource identifier="LMSTESTCOURSEJAR01" type="webcontent"
+                adlcp:scormtype="asset">
+         <file href="Lesson01/Resources/LMSTestCourse.jar" />
+      </resource>
+
+   </resources>
+</manifest>

@@ -1,0 +1,619 @@
+<!doctype html public "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html>
+<script language="JAVASCRIPT">
+window.onerror = true;
+/*******************************************************************************
+** Filename:  sco01.htm
+**
+** File Description: ADL SCORM Test Course I - SCO 01 - Tests the LMS's:
+**                   Launch Conformance
+**                   API implementation Conformance
+**                   Mandatory Data Model Element Conformance
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+**
+** 07/03/2001     Jeff Falls        PT#964 - Removed addition of
+**                                  cmi.core.session_time sets
+**
+** 10/5/2001      Bill Capone       PT 1217 & 1232: Added call to newly created
+**                                  function nameCompare().
+**
+** 10/30/2001     Bill Capone       Stripted whitespace and added a comma before
+**                                  the first argument when checking the indexOf
+**                                  "raw".
+**
+** 11/16/2001     S. Thropp         Fixed the logic dealing with the return from
+**                                  nameCompare.
+**
+** 01/04/2002     Bill Capone       In the test for cmi.suspend_data add check
+**                                  to see if someOptional should be set back
+**                                  to false.
+**
+** 01/08/2002     Bill Capone       Changed write log entry from a warning to
+**                                  failed when the student_id does not match
+**                                  the student_id entered by the operator.
+**                                  This is as per Perfect Tracker 1366.
+**
+** 06/21/2011	  Mayank Gupta      Modified performTest function. For alert 
+**				    compatibilty with Selenium WebDriver used 
+** 				    in ADL 1.2 Test Script.
+**
+*******************************************************************************/
+</script>
+<script language=JAVASCRIPT src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+<script language=JAVASCRIPT src="lmsrtefunctions.js"></script>
+<script language=JAVASCRIPT>
+
+   // Define data model related variables and constants
+
+   var dataModelMatrix = new Array(17);
+
+   var _R = 0; // read only
+   var _W = 1; // write only
+   var _RW = 2; // both read/write
+
+   // the following var stores list of elements that are selected by the
+   // operator to be treated as mandatory, but that are found not to be
+   // implemented by the test subject LMS.
+
+   var dataElementNotImplemented = "";
+
+   var apiObj = null;
+
+
+   /*******************************************************************************
+   **
+   ** Function performTest()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function is the main test driver for this SCO.
+   **
+   *******************************************************************************/
+   function performTest()
+   {
+      if(_Debug)
+      {
+         alert("in performTest()");
+      }
+      scoStatus = "incomplete";
+
+      // ************************************************************
+      // Test to see if the LMS launched the SCO in the correct order
+      // ************************************************************
+      testLaunch(1, 1);
+
+      // testLaunch() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // ********************************************************************
+      // Test to see if the LMS implements the SCORM Run-Time Environment API
+      // ********************************************************************
+
+      // Note: Determining which functions the API implements has been moved to
+      // the first occurence of each function in SCOs 01 and 02.
+
+      // *********************************************
+      // Initialize the SCO by calling LMSInitialize()
+      // *********************************************
+      var result = doLMSInitializeTest();
+
+      // doLMSInitialize() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // *************************************************************************
+      // Test to see if the LMS supports the mandatory data model elements defined
+      // in the SCORM Run-Time Environment Data Model
+      // *************************************************************************
+
+      testDataModelMandatory();
+
+      // testDataModelMandatory() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // Set the overall Data Model Status
+      setDMStatus();
+
+      // ***************************************
+      // Commit all data that was set to the LMS
+      // ***************************************
+      result = doLMSCommitTest();
+
+      // doLMSCommit() may have set the overall SCO status to terminated, if
+      // so end the test and return
+      if(scoStatus == "terminated")
+      {
+         return;
+      }
+
+      // Indicate to the Tester that the SCO is completed
+      // NOTE: The following text is overwritten if LMSFinish fails.
+      teststatus.innerText = "Status:  This SCO Test Completed.";
+
+      // Indicated to the Tester that the SCO is complete and the next one
+      // is ready to be tested
+      //alert("Completing testing.  Please launch the next SCO.");
+		
+      // Set the current SCOs status
+      lmsRTEApplet.setCurrentSCOStatus("completed");
+
+      // *********************************************************************
+      // Invoke the LMSFinish() call to indicate the SCO is done communicating
+      // *********************************************************************
+      result = doLMSFinishTest();
+
+   }
+
+   /*******************************************************************************
+   ** Function initializeDataModelMatrix()
+   ** Inputs:  None
+   ** Return:  None
+   **
+   ** Description:
+   ** This function initializes an array of arrays (javascript doesn't have
+   ** multi-dimensional arrays) that serves as a data structure to house
+   ** information about the CMI datamodel.  It uses a array called
+   ** dataModelMatrix which is declared global to this page.
+   ** The 96 rows represent each possible data model element.  The arrays
+   ** of columns are defined as follows:
+   **     column   Description
+   **       0      Cmi data model element name
+   **       1      Accessibility from the SCO perspective:
+   **                    _R (AU can Read only)
+   **                    _W (AU can Write only)
+   **                    _RW (AU can Read/Write)
+   **       2      Mandatory/Optional (true=mandatory / false=optional)
+   **       3      Value written (or to write) to the LMS (if writeable)
+   **       4      Element is found to be implemented correctly by the LMS (true/false)
+   **
+   *******************************************************************************/
+   function initializeDataModelMatrix()
+   {
+
+      if (_Debug)
+      {
+         alert("in initializeDataModelMatrix()");
+      }
+
+      for (var j=0;j<dataModelMatrix.length;j++)
+      {
+         dataModelMatrix[j] = new Array(5);
+         dataModelMatrix[j][2] = false;  // Initialize to optional
+         dataModelMatrix[j][4] = false;   // Initialize to not implemented correctly
+      }
+
+      dataModelMatrix[0][0] = "cmi.core._children";
+      dataModelMatrix[0][1] = _R;
+      dataModelMatrix[0][2] = true;
+
+      dataModelMatrix[1][0] = "cmi.core.student_id";
+      dataModelMatrix[1][1] = _R;
+      dataModelMatrix[1][2] = true;
+
+      dataModelMatrix[2][0] = "cmi.core.student_name";
+      dataModelMatrix[2][1] = _R;
+      dataModelMatrix[2][2] = true;
+
+      dataModelMatrix[3][0] = "cmi.core.lesson_location";
+      dataModelMatrix[3][1] = _RW;
+      dataModelMatrix[3][2] = true;
+      dataModelMatrix[3][3] = "end";
+
+      dataModelMatrix[4][0] = "cmi.core.credit";
+      dataModelMatrix[4][1] = _R;
+      dataModelMatrix[4][2] = true;
+
+      dataModelMatrix[5][0] = "cmi.core.lesson_status";
+      dataModelMatrix[5][1] = _RW;
+      dataModelMatrix[5][2] = true;
+      dataModelMatrix[5][3] = "completed";
+
+      dataModelMatrix[6][0] = "cmi.core.entry";
+      dataModelMatrix[6][1] = _R;
+      dataModelMatrix[6][2] = true;
+
+      dataModelMatrix[7][0] = "cmi.core.score._children";
+      dataModelMatrix[7][1] = _R;
+      dataModelMatrix[7][2] = true;
+
+      dataModelMatrix[8][0] = "cmi.core.score.raw";
+      dataModelMatrix[8][1] = _RW;
+      dataModelMatrix[8][2] = true;
+      dataModelMatrix[8][3] = "0";
+
+      dataModelMatrix[9][0] = "cmi.core.score.max";
+      dataModelMatrix[9][1] = _RW;
+      dataModelMatrix[9][3] = "100";
+
+      dataModelMatrix[10][0] = "cmi.core.score.min";
+      dataModelMatrix[10][1] = _RW;
+      dataModelMatrix[10][3] = "70";
+
+      dataModelMatrix[11][0] = "cmi.core.total_time";
+      dataModelMatrix[11][1] = _R;
+      dataModelMatrix[11][2] = true;
+
+      dataModelMatrix[12][0] = "cmi.core.lesson_mode";
+      dataModelMatrix[12][1] = _R;
+
+      dataModelMatrix[13][0] = "cmi.core.exit";
+      dataModelMatrix[13][1] = _W;
+      dataModelMatrix[13][2] = true;
+      dataModelMatrix[13][3] = "";
+
+      dataModelMatrix[14][0] = "cmi.core.session_time";
+      dataModelMatrix[14][1] = _W;
+      dataModelMatrix[14][2] = true;
+      dataModelMatrix[14][3] = "00:01:00";
+
+      dataModelMatrix[15][0] = "cmi.suspend_data";
+      dataModelMatrix[15][1] = _RW;
+      dataModelMatrix[15][2] = true;
+      dataModelMatrix[15][3] = "none";
+
+      dataModelMatrix[16][0] = "cmi.launch_data";
+      dataModelMatrix[16][1] = _R;
+      dataModelMatrix[16][2] = true;
+
+      if(_Debug)
+      {
+         alert("done initializing dataModelMatrix");
+      }
+
+
+   }
+
+
+   /****************************************************************************
+   ** function testDataModelMandatory()
+   ** inputs:  None
+   ** outputs: None
+   ** purpose: This function determines if all mandatory elements are
+   **          implemented correctly
+   ****************************************************************************/
+   function testDataModelMandatory()
+   {
+
+      if(_Debug)
+      {
+         alert("in testDataModel()");
+      }
+
+      writeLogEntry(_INFO, "Beginning mandatory data model element test.");
+
+      initializeDataModelMatrix();
+
+      var rtnVal;
+
+      // ***********************
+      // Test cmi.core._children
+      // ***********************
+      rtnVal = testGetValueTest(dataModelMatrix[0][0], 0);
+
+      // Add a comma to the end to facilitate matching of element strings
+      rtnVal += ",";
+
+      // Make sure all the mandatory elements are represented - order is not important
+      for(var i=1;i<15;i++)
+      {
+         // Do not check cmi.core.score child elements
+         if(i<8 || i>10)
+         {
+            // if mandatory
+            if(dataModelMatrix[i][2] == true)
+            {
+               var childElement;
+               if(i==7)
+               {
+                  childElement = "score,";
+               }
+               else
+               {
+                  // Parse the substring to the left of "cmi.core." (9th char starting from 0)
+                  childElement = dataModelMatrix[i][0].substring(9)+",";
+               }
+
+               if(rtnVal.indexOf(childElement) == -1)
+               {
+                  // The mandatory element is not in the children result
+                  var logMsg = childElement;
+                  logMsg += " is a mandatory cmi.core element and is not a member of the cmi.core._children string returned by the LMS.";
+                  allMandatory = false;
+                  writeLogEntry(_FAILED,  logMsg);
+               }
+            }
+         }
+      }
+
+      // *************************
+      // Test cmi.core.student_id
+      // *************************
+      rtnVal = testGetValue(dataModelMatrix[1][0], 1);
+      if(rtnVal != "")
+      {
+         var studentIdEntered = lmsRTEApplet.getStudentId(0);
+         if(rtnVal != studentIdEntered)
+         {
+            var logMsg = "The Student ID returned by the LMS, &quot;";
+            logMsg += rtnVal;
+            logMsg += "&quot; does not match the Student ID entered by the operator, ";
+            logMsg += "&quot;"+studentIdEntered+"&quot;";
+            allMandatory = false;
+            writeLogEntry(_FAILED, logMsg);
+         }
+      }
+
+      // **************************
+      // Test cmi.core.student_name
+      // **************************
+      rtnVal = testGetValue(dataModelMatrix[2][0], 2);
+      if(rtnVal != "")
+      {
+         var instructedStudentName = lmsRTEApplet.getStudentName(0);
+         var nameRtn = nameCompare(rtnVal, instructedStudentName)
+         if(nameRtn == false)
+         {
+            var logMsg = "The student name returned by the LMS is incorrect.";
+            logMsg += "  The student name should be &quot;";
+            logMsg += instructedStudentName+"&quot;";
+            allMandatory = false;
+            writeLogEntry(_FAILED, logMsg);
+         }
+      }
+
+      // *****************************
+      // Test cmi.core.lesson_location
+      // *****************************
+      testSetValueTest(dataModelMatrix[3][0], dataModelMatrix[3][3], 3);
+      rtnVal = testGetValue(dataModelMatrix[3][0], 3);
+      compareReadWriteValues(rtnVal, 3);
+
+
+      // ********************
+      // Test cmi.core.credit
+      // ********************
+      rtnVal = testGetValue(dataModelMatrix[4][0], 4);
+      if(rtnVal != "credit")
+      {
+         writeLogEntry(_WARNING, "The instructions specified that this test course should be taken for &quot;credit&quot;");
+      }
+
+      // ***************************
+      // Test cmi.core.lesson_status
+      // ***************************
+      rtnVal = testGetValue(dataModelMatrix[5][0], 5);
+      if (rtnVal != "not attempted")
+      {
+         var logMsg = "LMSGetValue(&quot;cmi.core.lesson_status&quot;) returned: ";
+         logMsg += rtnVal;
+         logMsg += " when a value of &quot;not attempted&quot; was expected";
+         allMandatory = false;
+         writeLogEntry(_FAILED, logMsg);
+      }
+
+      // now set the lesson_status and re-get to assure it was set properly
+      testSetValue(dataModelMatrix[5][0], dataModelMatrix[5][3], 5);
+      rtnVal = testGetValue(dataModelMatrix[5][0], 5);
+      compareReadWriteValues(rtnVal, 5);
+
+      // *******************
+      // Test cmi.core.entry
+      // *******************
+      rtnVal = testGetValue(dataModelMatrix[6][0], 6);
+      if (rtnVal != "ab-initio")
+      {
+         var logMsg = "LMSGetValue(&quot;cmi.core.entry&quot;) returned: ";
+         logMsg += rtnVal;
+         logMsg += " when a value of &quot;ab-initio&quot; was expected";
+         allMandatory = false;
+         writeLogEntry(_FAILED, logMsg);
+      }
+
+      // *****************************
+      // Test cmi.core.score._children
+      // *****************************
+      var tempString;
+      tempString = ",";
+      rtnVal = testGetValue(dataModelMatrix[7][0], 7);
+      tempString += stripWhitespace(rtnVal);
+      tempString += ",";
+
+      // children must contain at least cmi.core.score.raw (mandatory)
+      if(tempString.indexOf(",raw,") == -1)
+      {
+         var logMsg = dataModelMatrix[8][0];
+         logMsg += " is a mandatory cmi.core.score element and is not a member of the cmi.core.score._children string returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+
+      // ***********************
+      // Test cmi.core.score.raw
+      // ***********************
+      testSetValue(dataModelMatrix[8][0], dataModelMatrix[8][3], 8);
+      rtnVal = testGetValue(dataModelMatrix[8][0], 8);
+      // Convert string into its numeric equivalent.
+      rtnVal = parseFloat(rtnVal);
+      compareReadWriteValues(rtnVal, 8);
+
+
+      // **************************
+      // Test cmi.core.session_time
+      // **************************
+      testSetValue(dataModelMatrix[14][0], dataModelMatrix[14][3], 14);
+
+      // ******************
+      // Test cmi.core.exit
+      // ******************
+      testSetValue(dataModelMatrix[13][0], dataModelMatrix[13][3], 13);
+
+
+      // *********************
+      // Test cmi.suspend_data
+      // *********************
+      testSetValue(dataModelMatrix[15][0], dataModelMatrix[15][3], 15);
+      rtnVal = testGetValue(dataModelMatrix[15][0], 15);
+      compareReadWriteValues(rtnVal, 15);
+
+      // ********************
+      // Test cmi.launch_data
+      // ********************
+      rtnVal = testGetValue(dataModelMatrix[16][0], 16);
+
+      // If the operator claimed that the Content Package Import was successful,
+      if(lmsRTEApplet.getCourseOneCPImport() == true)
+      {
+         // see if the LMS's launch_data return value is
+         // equal to the value that was in the Content Package.
+         var cpLaunchData = lmsRTEApplet.getSCOCPLaunchData(1, 0);
+         if(rtnVal != cpLaunchData)
+         {
+            var logMsg = "The LMS did not return a value for cmi.core.launch_data equal ";
+            logMsg += "to the &lt;adlcp:datafromlms&gt; value provided in the Content Package for this SCO.<br>";
+            logMsg += "Content Package &lt;adlcp:datafromlms&gt; value: &quot;"+cpLaunchData+"&quot;<br>";
+            logMsg += "LMS returned: &quot;"+rtnVal+"&quot;";
+
+            writeLogEntry(_WARNING, logMsg);
+            allMandatory = false;
+         }
+         else
+         {
+            var logMsg = "The LMS returned cmi.core.launch_data equal ";
+            logMsg += "to the &lt;adlcp:datafromlms&gt; value provided in the Content Package for this SCO.<br>";
+            logMsg += "Content Package &lt;adlcp:datafromlms&gt; value: &quot;"+cpLaunchData+"&quot;<br>";
+            logMsg += "LMS returned: &quot;"+rtnVal+"&quot;";
+
+            writeLogEntry(_PASSED, logMsg);
+         }
+      }
+      return;
+
+      // END OF Mandatory element testing
+   }
+</script>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course I - SCO #01</title>
+</head>
+<body onload="performTest();">
+
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course I - SCO #01 <br />
+<br />
+<br />
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</div>
+</font>
+<br />
+<hr color="#353889" />
+<br />
+<p>
+Please view the ADL test  suite log for detailed progress and status information
+for this test.
+</p>
+<p>
+This test may take several minutes to complete.
+</p>
+<p>
+Depending upon the functionality of the LMS, this SCO may or may not be unloaded
+automatically upon conclusion of the testing performed by the SCO. When the SCO
+completes, the status above will change to "<strong><em>This SCO Test Completed.</em></strong>
+".  If the LMS does NOT automatically sequence SCO's, then please navigate to
+the next SCO manually when this status is displayed.
+</p>
+<p>
+This Sharable Content Object (SCO) tests the Learning Management System for
+conformance with the Runtime Environment Guidelines as described in the SCORM.
+Specifically, this SCO performs the following:
+</p>
+<ol>
+   <ol>
+      <li>
+         Validates that this SCO was launched in the appropriate sequence (first)
+      <li>
+         Locates the LMS's API Adapter implementation
+      <li>
+         Audits the LMS's API implementation in an attempt to determine if the LMS
+         implements all of the API functions
+      <li>
+         Calls the LMSInitialize function
+      <li>
+         Tests the LMS's implementation of the Mandatory data model elements
+      <li>
+         Calls the LMSCommit function
+      <li>
+         Calls the LMSFinish function
+      </li>
+   </ol>
+</ol>
+<br />
+<hr color="#353889" />
+</body>
+</html>

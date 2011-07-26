@@ -1,0 +1,1034 @@
+<HTML>
+
+<HEAD>
+<META http-equiv="expires" CONTENT="Tue, 20 Aug 1999 01:00:00 GMT">
+<META http-equiv="Pragma" CONTENT="no-cache">
+<SCRIPT LANGUAGE=JAVASCRIPT>
+<!--
+/*******************************************************************************
+** Filename:  SCO07.htm
+**
+** File Description: ADL SCORM Test Course I - SCO 07 - Tests the LMS's:
+**
+**
+**
+** Author: CTC ADL Project Team
+**
+** Contract Number:
+** Company Name: CTC
+**
+** Module/Package Name:
+** Module/Package Description:
+**
+** Design Issues:
+** Implementation Issues:
+**
+** Known Problems:
+** Side Effects:
+**
+** References:  ADL SCORM
+**
+**
+/*******************************************************************************
+**
+** The Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+** ("Licensee") a non-exclusive, royalty free, license to use, modify and
+** redistribute this software in source and binary code form, provided that
+** i) this copyright notice and license appear on all copies of the software;
+** and ii) Licensee does not utilize the software in a manner which is
+** disparaging to ADL Co-Lab.
+**
+** This software is provided "AS IS," without a warranty of any kind.  ALL
+** EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING ANY
+** IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-
+** INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL Co-Lab AND ITS LICENSORS SHALL NOT BE
+** LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING
+** OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL Co-Lab
+** OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR
+** DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES,
+** HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF THE
+** USE OF OR INABILITY TO USE SOFTWARE, EVEN IF ADL Co-Lab  HAS BEEN ADVISED OF
+** THE POSSIBILITY OF SUCH DAMAGES.
+**
+**
+** Date Changed   Author            Reason for Changes
+** ------------   ----------------  -------------------------------------------
+** 11/27/2001     Jeff Falls        Corrected the reporting and tracking of
+**                                  conformance labels
+**
+** 01/11/2002     Bill Capone       Modified many of the elements to be
+**                                  compatible for LMS Requirements 1.2.
+**                                  See Perfect Tracker 1491.
+**
+** 05/15/2002     Bill Capone       PT1976: Removed the calls to
+**                                  cmi.interactions.4.objectives._count and
+**                                  cmi.interactions.2.correct_responses._count.
+**
+**
+** 06/21/2011	  Mayank Gupta	    Modified doTest function. For alert compatibility
+**				    with Selenium WebDriver used in ADL 1.2
+**				    Test Script.
+*******************************************************************************/
+-->
+</SCRIPT>
+<SCRIPT LANGUAGE=JAVASCRIPT SRC="lmsrtefunctions.js"></SCRIPT>
+<SCRIPT LANGUAGE=JAVASCRIPT>
+
+/*******************************************************************************
+**
+** Function loadThisPage()
+** Inputs:  None
+** Return:  None
+**
+** Description:
+** Calls the intialize and doTest functions.
+**
+*******************************************************************************/
+function loadThisPage()
+{
+   doLMSInitialize("");
+   doTest();
+}
+
+/*******************************************************************************
+**
+** Function doTest()
+** Inputs:  None
+** Return:  None
+**
+** Description:
+** Calls testMandatory and testOptional which then test each and every Data
+** Model element except for cmi.objectives.
+**
+*******************************************************************************/
+function doTest()
+{
+   // Test to make sure that the LMS launched the SCO in the correct order
+   testLaunch(1, 7);
+   if(scoStatus == "terminated")
+   {
+      return;
+   }
+
+   // Set up the API for communication
+   setAPIHandle(null);
+   if(scoStatus == "terminated")
+   {
+      return;
+   }
+
+   // Test all mandatory LMSGetValue() requests
+   testMandatory();
+
+   // Test all optional LMSGetValue() requests except for cmi.objectives
+   testOptional();
+
+   doLMSSetValue("cmi.core.lesson_status", "completed");
+   doLMSSetValue("cmi.core.exit", "" );
+   doLMSSetValue("cmi.core.session_time", "03:01:39.52");
+
+   // Set the Data Model status
+   setDMStatus();
+
+   // Have the LMS commit any data that was set
+   result = doLMSCommit();
+   if(scoStatus == "terminated")
+   {
+      return;
+   }
+
+   lmsRTEApplet.setCurrentSCOStatus("completed");
+   teststatus.innerText = "Status:  This SCO Test Completed.";
+   // note the above text gets overwritten if LMSFinish fails.
+
+   //alert("Completing testing.  Please launch the next SCO.");
+
+   // Invoke LMSFinish()
+   finish();
+}
+
+/*******************************************************************************
+**
+** Function finish()
+** Inputs:  None
+** Return:  None
+**
+** Description:
+** Calls doLMSFinish which will close the communication to the LMS.
+**
+*******************************************************************************/
+function finish()
+{
+   doLMSFinish();
+}
+
+/*******************************************************************************
+**
+** Function testMandatory()
+** Inputs:  None
+** Return:  None
+**
+** Description:
+** Test all Data Model Elements that ARE mandatory.
+**
+*******************************************************************************/
+function testMandatory()
+{
+   var result = "";
+   var errorcode = "";
+   var tempString = "";
+
+   result = apiHandle.LMSGetValue("cmi.core._children");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core._children", errorcode, true, _NoError);
+
+   if(errorcode == _NoError)
+   {
+      // Delimeters (,) needed if item is first or last in the list and to
+      // prevent finding e.g. "id" in "ids"
+      tempString = ",";
+      tempString += stripWhitespace(result);
+      tempString += ",";
+
+      // verify student_id has been returned
+      if(tempString.indexOf(",student_id,") == -1)
+      {
+         var logMsg = "&quot;student_id&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify student_name has been returned
+      if(tempString.indexOf(",student_name,") == -1)
+      {
+         var logMsg = "&quot;student_name&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify lesson_location has been returned
+      if(tempString.indexOf(",lesson_location,") == -1)
+      {
+         var logMsg = "&quot;lesson_location&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify credit has been returned
+      if(tempString.indexOf(",credit,") == -1)
+      {
+         var logMsg = "&quot;credit&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify lesson_status has been returned
+      if(tempString.indexOf(",lesson_status,") == -1)
+      {
+         var logMsg = "&quot;lesson_status&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify entry has been returned
+      if(tempString.indexOf(",entry,") == -1)
+      {
+         var logMsg = "&quot;entry&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify score has been returned
+      if(tempString.indexOf(",score,") == -1)
+      {
+         var logMsg = "&quot;score&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify total_time has been returned
+      if(tempString.indexOf(",total_time,") == -1)
+      {
+         var logMsg = "&quot;total_time&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify lesson_mode has been returned
+      if(tempString.indexOf(",lesson_mode,") == -1)
+      {
+         var logMsg = "&quot;lesson_mode&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify exit has been returned
+      if(tempString.indexOf(",exit,") == -1)
+      {
+         var logMsg = "&quot;exit&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify session_time has been returned
+      if(tempString.indexOf(",session_time,") == -1)
+      {
+         var logMsg = "&quot;session_time&quot; is a cmi.core element " +
+            "and is not a member of the cmi.core._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+   }
+
+   result = apiHandle.LMSGetValue("cmi.core.student_id");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core.student_id", errorcode, true, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.core.student_name");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core.student_name", errorcode, true, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.core.lesson_location");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core.lesson_location", errorcode, true, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.core.credit");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core.credit", errorcode, true, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.core.lesson_status");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core.lesson_status", errorcode, true, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.core.entry");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core.entry", errorcode, true, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.core.score._children");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core.score._children", errorcode, true, _NoError);
+
+   if(errorcode == _NoError)
+   {
+      // Delimeters (,) needed if item is first or last in the list and to
+      // prevent finding e.g. "id" in "ids"
+      tempString = ",";
+      tempString += stripWhitespace(result);
+      tempString += ",";
+
+      // verify raw has been returned
+      if(tempString.indexOf(",raw,") == -1)
+      {
+         var logMsg = "&quot;raw&quot; is a cmi.core.score element " +
+            "and is not a member of the cmi.core.score._children string " +
+            "returned by the LMS.";
+         allMandatory = false;
+         writeLogEntry(_FAILED,  logMsg);
+      }
+      // verify max has been returned
+      if(tempString.indexOf(",max,") == -1)
+      {
+         var logMsg = "&quot;max&quot; is a cmi.core.score element " +
+            "and is not a member of the cmi.core.score._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify min has been returned
+      if(tempString.indexOf(",min,") == -1)
+      {
+         var logMsg = "&quot;min&quot; is a cmi.core.score element " +
+            "and is not a member of the cmi.core.score._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+   }
+
+   result = apiHandle.LMSGetValue("cmi.core.score.raw");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core.score.raw", errorcode, true, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.core.total_time");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.core.total_time", errorcode, true, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.core.exit");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.core.exit", errorcode, true, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.core.session_time");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.core.session_time", errorcode, true, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.suspend_data");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.suspend_data", errorcode, true, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.launch_data");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfo("cmi.launch_data", errorcode, true, _NoError);
+}
+
+/*******************************************************************************
+**
+** Function testOptional()
+** Inputs:  None
+** Return:  None
+**
+** Description:
+** Test all Data Model Elements that are NOT mandatory (i.e. they're Optional)
+** except for cmi.objectives.
+**
+*******************************************************************************/
+function testOptional()
+{
+   var result = "";
+   var errorcode = "";
+   var tempString = "";
+
+   result = apiHandle.LMSGetValue("cmi.core.score.max");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.core.score.max", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.core.score.min");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.core.score.min", errorcode, false, _NoError);
+
+   // sets allOptional to false
+   result = apiHandle.LMSGetValue("cmi.core.lesson_mode");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.core.lesson_mode", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.comments");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.comments", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.comments_from_lms");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.comments_from_lms", errorcode, false, _NoError);
+
+   // Set the id first - we are only testing the ._children in objectives
+   result = apiHandle.LMSSetValue("cmi.objectives.0.id","Obj0");
+   result = apiHandle.LMSGetValue("cmi.objectives._children");
+   errorcode = apiHandle.LMSGetLastError();
+
+   if(errorcode == _NoError)
+   {
+      // Delimeters (,) needed if item is first or last in the list and to
+      // prevent finding e.g. "id" in "ids"
+      tempString = ",";
+      tempString += stripWhitespace(result);
+      tempString += ",";
+
+      // verify id has been returned
+      if(tempString.indexOf(",id,") == -1)
+      {
+         var logMsg = "&quot;id&quot; is a cmi.objectives element " +
+            "and is not a member of the cmi.objectives._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify score has been returned
+      if(tempString.indexOf(",score,") == -1)
+      {
+         var logMsg = "&quot;score&quot; is a cmi.objectives element " +
+            "and is not a member of the cmi.objectives._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify status has been returned
+      if(tempString.indexOf(",status,") == -1)
+      {
+         var logMsg = "&quot;status&quot; is a cmi.objectives element " +
+            "and is not a member of the cmi.objectives._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+   }
+
+   result = apiHandle.LMSGetValue("cmi.objectives.0.score._children");
+   errorcode = apiHandle.LMSGetLastError();
+
+   if(errorcode == _NoError)
+   {
+      // Delimeters (,) needed if item is first or last in the list and to
+      // prevent finding e.g. "id" in "ids"
+      tempString = ",";
+      tempString += stripWhitespace(result);
+      tempString += ",";
+
+      // verify raw has been returned
+      if(tempString.indexOf(",raw,") == -1)
+      {
+         var logMsg = "&quot;raw&quot; is a cmi.objectives.n.score element " +
+            "and is not a member of the cmi.objectives.n.score._children " +
+            "string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify min has been returned
+      if(tempString.indexOf(",min,") == -1)
+      {
+         var logMsg = "&quot;min&quot; is a cmi.objectives.n.score element " +
+            "and is not a member of the cmi.objectives.n.score._children " +
+            "string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify max has been returned
+      if(tempString.indexOf(",max,") == -1)
+      {
+         var logMsg = "&quot;max&quot; is a cmi.objectives.n.score element " +
+            "and is not a member of the cmi.objectives.n.score._children " +
+            "string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+   }
+
+   result = apiHandle.LMSGetValue("cmi.student_data._children");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.student_data._children", errorcode, false, _NoError);
+
+   if(errorcode == _NoError)
+   {
+      // Delimeters (,) needed if item is first or last in the list and to
+      // prevent finding e.g. "id" in "ids"
+      tempString = ",";
+      tempString += stripWhitespace(result);
+      tempString += ",";
+
+      // verify mastery_score has been returned
+      if(tempString.indexOf(",mastery_score,") == -1)
+      {
+         var logMsg = "&quot;mastery_score&quot; is a cmi.student_data " +
+            "element and is not a member of the cmi.student_data._children " +
+            "string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify max_time_allowed has been returned
+      if(tempString.indexOf(",max_time_allowed,") == -1)
+      {
+         var logMsg = "&quot;max_time_allowed&quot; is a cmi.student_data " +
+            "element and is not a member of the cmi.student_data._children " +
+            "string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify time_limit_action has been returned
+      if(tempString.indexOf(",time_limit_action,") == -1)
+      {
+         var logMsg = "&quot;time_limit_action&quot; is a cmi.student_data " +
+            "element and is not a member of the cmi.student_data._children " +
+            "string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+   }
+
+   result = apiHandle.LMSGetValue("cmi.student_data.mastery_score");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.student_data.mastery_score", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.student_data.max_time_allowed");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.student_data.max_time_allowed", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.student_data.time_limit_action");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.student_data.time_limit_action", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.student_preference._children");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.student_preference._children", errorcode, false, _NoError);
+
+   if(errorcode == _NoError)
+   {
+      // Delimeters (,) needed if item is first or last in the list and to
+      // prevent finding e.g. "id" in "ids"
+      tempString = ",";
+      tempString += stripWhitespace(result);
+      tempString += ",";
+
+      // verify audio has been returned
+      if(tempString.indexOf(",audio,") == -1)
+      {
+         var logMsg = "&quot;audio&quot; is a cmi.student_preference " +
+            "element and is not a member of the " +
+            "cmi.student_preference._children string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify language has been returned
+      if(tempString.indexOf(",language,") == -1)
+      {
+         var logMsg = "&quot;language&quot; is a cmi.student_preference " +
+            "element and is not a member of the " +
+            "cmi.student_preference._children string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify speed has been returned
+      if(tempString.indexOf(",speed,") == -1)
+      {
+         var logMsg = "&quot;speed&quot; is a cmi.student_preference " +
+            "element and is not a member of the " +
+            "cmi.student_preference._children string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify text has been returned
+      if(tempString.indexOf(",text,") == -1)
+      {
+         var logMsg = "&quot;text&quot; is a cmi.student_preference " +
+            "element and is not a member of the " +
+            "cmi.student_preference._children string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+   }
+
+   result = apiHandle.LMSGetValue("cmi.student_preference.audio");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.student_preference.audio", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.student_preference.language");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.student_preference.language", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.student_preference.speed");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.student_preference.speed", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.student_preference.text");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.student_preference.text", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions._children");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.interactions._children", errorcode, false, _NoError);
+
+   if(errorcode == _NoError)
+   {
+      // Delimeters (,) needed if item is first or last in the list and to
+      // prevent finding e.g. "id" in "ids"
+      tempString = ",";
+      tempString += stripWhitespace(result);
+      tempString += ",";
+
+      // verify id has been returned
+      if(tempString.indexOf(",id,") == -1)
+      {
+         var logMsg = "&quot;id&quot; is a cmi.interactions element " +
+            "and is not a member of the cmi.interactions._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify objectives has been returned
+      if(tempString.indexOf(",objectives,") == -1)
+      {
+         var logMsg = "&quot;objectives&quot; is a cmi.interactions element " +
+            "and is not a member of the cmi.interactions._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify time has been returned
+      if(tempString.indexOf(",time,") == -1)
+      {
+         var logMsg = "&quot;time&quot; is a cmi.interactions element " +
+            "and is not a member of the cmi.interactions._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify type has been returned
+      if(tempString.indexOf(",type,") == -1)
+      {
+         var logMsg = "&quot;type&quot; is a cmi.interactions element " +
+            "and is not a member of the cmi.interactions._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify correct_responses has been returned
+      if(tempString.indexOf(",correct_responses,") == -1)
+      {
+         var logMsg = "&quot;correct_responses&quot; is a cmi.interactions " +
+            "element and is not a member of the cmi.interactions._children " +
+            "string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify weighting has been returned
+      if(tempString.indexOf(",weighting,") == -1)
+      {
+         var logMsg = "&quot;weighting&quot; is a cmi.interactions element " +
+            "and is not a member of the cmi.interactions._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify student_response has been returned
+      if(tempString.indexOf(",student_response,") == -1)
+      {
+         var logMsg = "&quot;student_response&quot; is a cmi.interactions " +
+            "element and is not a member of the cmi.interactions._children " +
+            "string returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify result has been returned
+      if(tempString.indexOf(",result,") == -1)
+      {
+         var logMsg = "&quot;result&quot; is a cmi.interactions element " +
+            "and is not a member of the cmi.interactions._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+      // verify latency has been returned
+      if(tempString.indexOf(",latency,") == -1)
+      {
+         var logMsg = "&quot;latency&quot; is a cmi.interactions element " +
+            "and is not a member of the cmi.interactions._children string " +
+            "returned by the LMS.";
+         allOptional = false;
+         writeLogEntry(_WARNING,  logMsg);
+      }
+   }
+
+   result = apiHandle.LMSGetValue("cmi.interactions._count");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.interactions._count", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.id");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.0.id", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.1.id");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.1.id", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.objectives._count");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.interactions.0.objectives._count", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.objectives.0.id");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.0.objectives.0.id", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+   result = apiHandle.LMSGetValue("cmi.interactions.2.objectives.0.id");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.2.objectives.0.id", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.time");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.0.time", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+   result = apiHandle.LMSGetValue("cmi.interactions.2.time");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.2.time", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.type");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.0.type", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+   result = apiHandle.LMSGetValue("cmi.interactions.1.type");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.1.type", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.correct_responses._count");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoForOptionalRead("cmi.interactions.0.correct_responses._count", errorcode, false, _NoError);
+   //Removing the following in Version 1.2.2.  This situation will be clarified in Version 1.3
+   //result = apiHandle.LMSGetValue("cmi.interactions.2.correct_responses._count");
+   //errorcode = apiHandle.LMSGetLastError();
+   //displayInfoForOptionalRead("cmi.interactions.2.correct_responses._count", errorcode, false, _NoError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.correct_responses.0.pattern");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.0.correct_responses.0.pattern", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+   result = apiHandle.LMSGetValue("cmi.interactions.1.correct_responses.1.pattern");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.1.correct_responses.1.pattern", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+   result = apiHandle.LMSGetValue("cmi.interactions.2.correct_responses.0.pattern");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.2.correct_responses.0.pattern", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.weighting");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.0.weighting", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+   result = apiHandle.LMSGetValue("cmi.interactions.1.weighting");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.1.weighting", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.student_response");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.0.student_response", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+   result = apiHandle.LMSGetValue("cmi.interactions.1.student_response");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.1.student_response", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.result");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.0.result", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+   result = apiHandle.LMSGetValue("cmi.interactions.2.result");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.2.result", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+
+   result = apiHandle.LMSGetValue("cmi.interactions.0.latency");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.0.latency", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+   result = apiHandle.LMSGetValue("cmi.interactions.2.latency");
+   errorcode = apiHandle.LMSGetLastError();
+   displayInfoElemIsWriteOnly("cmi.interactions.2.latency", errorcode, false, _ElementIsWriteOnly, _InvalidArgumentError);
+}
+
+/*******************************************************************************
+**
+** Function displayInfo()
+** Inputs:  cmiElement - Data Model Element name.
+**          errorCode - Error Code returned from call to
+**                     apiHandle.LMSGetLastError().
+**          mandatory - True if a Mandatory element. False if Optional.
+**          expectErrCode - Expected Error Code.
+** Return:  None
+**
+** Description:
+** Compares the actual Error Code received with the expected Error Code
+** received for the CMI Data Element passed in and writes the resulting
+** information to the log.  If the CMI Data Element is optional and the value
+** returned is a "Not Implemented Error", it will not fail the test, but will
+** display a warning.
+**
+*******************************************************************************/
+function displayInfo(cmiElement, errorCode, mandatory, expectErrCode)
+{
+   //If the actual Error Code equals the Error Code expected to be received.
+   if (errorCode == expectErrCode)
+   {
+      writeLogEntry(_PASSED, "LMSGetValue(" + cmiElement + ") returned expected error code: &quot;" + errorCode + "&quot;");
+      if ( mandatory == false )
+      {
+         someOptional = true;
+      }
+   }
+   //If it's Optional and Not Implemented: allow this, but give a warning
+   else if ((errorCode != expectErrCode) && (mandatory == false) && (errorCode == _NotImplementedError))
+   {
+      writeLogEntry(_WARNING, "LMSGetValue(" + cmiElement + ") returned: &quot;Not implemented&quot;");
+      allOptional = false;
+   }
+   //Else, they are not equal - fail the test.
+   else
+   {
+      writeLogEntry(_FAILED, "LMSGetValue(" + cmiElement + ") failed.  Expected: " + expectErrCode + " Returned: &quot;" + errorCode + "&quot;");
+      if (mandatory == true)
+      {
+         allMandatory = false;
+      }
+      else
+      {
+         allOptional = false;
+      }
+   }
+}
+
+/*******************************************************************************
+**
+** Function displayInfoElemIsWriteOnly()
+** Inputs:  cmiElement - Data Model Element name.
+**          errorCode - Error Code returned from call to
+**                           apiHandle.LMSGetLastError().
+**          mandatory - True if a Mandatory element. False if Optional.
+**          expectErrCode - Expected Error Code.
+**          warningErrCode - Error code that is acceptable but not preferred.
+** Return:  None
+**
+** Description:
+** Compares the actual Error Code received with the expected Error Code and the
+** acceptable Error Code received for the CMI Data Element passed in and writes
+** the resulting information to the log.  If the error code matches the
+** warning Error Code, the message to the log file is written as a Warning. If
+** the CMI Data Element is optional and the value returned is a "Not
+** Implemented Error", it will not fail the test, but will display a warning.
+**
+*******************************************************************************/
+function displayInfoElemIsWriteOnly(cmiElement, errorCode, mandatory, expectErrCode, warningErrCode)
+{
+   //If the actual error code equals the expected error code or an acceptable error code.
+   if ((errorCode == expectErrCode) || (errorCode == warningErrCode))
+   {
+      if (errorCode == expectErrCode)
+      {
+         writeLogEntry(_PASSED, "LMSGetValue(" + cmiElement + ") returned expected error code: &quot;" + errorCode + "&quot;");
+      }
+      //Display a Warning if an error code is used that is acceptable but not recommended
+      else if (errorCode == warningErrCode)
+      {
+         writeLogEntry(_WARNING, "LMSGetValue(" + cmiElement + ") returned: &quot;" + errorCode + "&quot;. In the future, the use of error code " + warningErrCode + " may be deprecated in this situation." );
+      }
+   }
+   //If it's Optional and Not Implemented: allow this, but give a warning
+   else if ((errorCode != expectErrCode) && (mandatory == false) && (errorCode == _NotImplementedError))
+   {
+      writeLogEntry(_WARNING, "LMSGetValue(" + cmiElement + ") returned: &quot;Not implemented&quot;");
+      allOptional = false;
+   }
+   //Else, they are not equal - fail the test.
+   else
+   {
+      writeLogEntry(_FAILED, "LMSGetValue(" + cmiElement + ") failed.  Expected: " + expectErrCode + " Returned: &quot;" + errorCode + "&quot;");
+      if (mandatory == true)
+      {
+         allMandatory = false;
+      }
+      else
+      {
+         allOptional = false;
+      }
+   }
+}
+
+/*******************************************************************************
+**
+** Function displayInfoForOptionalRead()
+** Inputs:  cmiElement - Data Model Element name.
+**          errorCode - Error Code returned from call to
+**                         apiHandle.LMSGetLastError().
+**          mandatory - True if a Mandatory element. False if Optional.
+**                      Realistically, this argument is redundant, since this
+**                      function should only be called for optional data model
+**                      elements.  Am leaving it in as a fail-safe mechanism.
+**          expectErrCode - Expected Error Code.
+** Return:  None
+**
+** Description:
+** This functions is for Optional Data Model elements that have Read ability.
+** This function compares the actual Error Code received with the expected Error
+** Code received for the CMI Data Element passed in and if they are equal it
+** writes to the log file that the LMSGetValue was successful.  If the CMI Data
+** Element is optional and the value returned is a "Not Implemented Error", it
+** will not fail the test, but will display a warning.  Also, if it receives "No
+** Error" as the expectErrCode, it passes the item.  This would indicate that
+** the optional item has been implemented and the LMSGetValue returned no error.
+**
+*******************************************************************************/
+function displayInfoForOptionalRead(cmiElement, errorCode, mandatory, expectErrCode)
+{
+   // If the error code the LMS sets is equal to the expected error code (0 - No Error)
+   if (errorCode == expectErrCode)
+   {
+      // LMSGetValue() call on an optional element was succesful
+      writeLogEntry(_PASSED, "LMSGetValue(" + cmiElement + ") returned expected error code: &quot;" + errorCode + "&quot;");
+      someOptional = true;
+   }
+   else
+   {
+       if (errorCode == _NotImplementedError)
+       {
+          writeLogEntry(_WARNING, "LMSGetValue(" + cmiElement + ") returned: &quot;Not implemented&quot;");
+          allOptional = false;
+       }
+       //Display a Warning if an error code is used that is acceptable but not recommended i.e. 201
+       else if ( errorCode == _InvalidArgumentError)
+       {
+          writeLogEntry(_WARNING, "LMSGetValue(" + cmiElement + ") returned: &quot;Invalid argument error&quot;");
+          allOptional = false;
+       }
+       else
+       {
+          writeLogEntry(_FAILED, "LMSGetValue(" + cmiElement + ") failed.  Error code " + errorCode +
+                        " was not what was expected (0,401 or 201 expected)");
+          allOptional = false;
+       }
+   }
+}
+</SCRIPT>
+<title>ADL SCORM Version 1.2 LMS Run-Time Environment Test - Course I - SCO #07</title>
+</head>
+<body onload="loadThisPage();">
+
+<object classid=clsid:8AD9C840-044E-11D1-b3e9-00805F499D93
+codebase="http://java.sun.com/products/plugin/1.3/jinstall-13-win32.cab#Version=1,3,0,0"
+height="1"  width="1" id=lmsRTEApplet>
+<param name="name" value="lmsRTEApplet">
+<param name="code" value="org/adl/testsuite/rte/lms/LMSRTEApplet.class">
+<param name="type" value="application/x-java-applet;version=1.3">
+<param name="mayscript" value="true">
+<param name="scriptable" value="true">
+<param name="archive" value="LMSTestCourse.jar">
+</object>
+
+<p align="left">
+<font color="#353889" size="5">
+ADL SCORM&reg; Version 1.2 LMS Run-Time Environment Test<br /><br />
+ADL SCORM Test Course I - SCO #07 <br />
+<br />
+<br />
+<br />
+<div id=teststatus>
+   <strong>Status:&nbsp;&nbsp;Testing in progress...</strong>
+</font>
+</div>
+<br />
+<hr color="#353889" />
+<br />
+<p>
+Please view the ADL test suite log for detailed progress and status information
+for this test.
+</p>
+<p>
+This test may take several minutes to complete. Please be patient!
+</p>
+<p>
+Depending upon the functionality of the LMS, this SCO may or may not be unloaded
+automatically upon conclusion of the testing performed by the SCO. When the SCO
+completes, the status above will change to "<strong><em>This SCO Test Completed.</em></strong>
+".  If the LMS does NOT automatically sequence SCO's, then please navigate to
+the next SCO manually when this status is displayed.
+</p>
+<p>
+This Sharable Content Object (SCO) tests the Learning Management System for
+conformance with the Runtime Environment Guidelines as described in the SCORM.
+The purpose of this SCO is to call LMSGetValue for every Data Model element
+(except for the cmi.objectives elements).  Then call LMSGetLastError and see if
+that call returns the expected error condition, if one exists.  Specifically,
+this SCO performs the following:
+</p>
+<ol>
+   <ol>
+      <li>
+         Validates that this SCO was launched in the appropriate sequence (seventh)
+      <li>
+         Locates the LMS's API Adapter implementation
+      <li>
+         Calls the LMSInitialize function
+      <li>
+         Call LMSGetValue for every Mandatory data model element
+      <li>
+         Call LMSGetValue for every Optional data model element except for cmi.objectives
+      <li>
+         Calls the LMSFinish function
+      </li>
+   </ol>
+</ol>
+<br />
+<hr color="#353889" />
+</body>
+</html>
