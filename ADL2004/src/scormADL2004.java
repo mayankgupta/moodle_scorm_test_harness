@@ -97,8 +97,8 @@ public class scormADL2004 {
 			driver.findElement(By.id("password")).sendKeys(password);
 		} else {
 			//If username or password not specified.
-			driver.findElement(By.id("username")).sendKeys("admin");
-			driver.findElement(By.id("password")).sendKeys("Admin@11");
+			driver.findElement(By.id("username")).sendKeys("joestudent");
+			driver.findElement(By.id("password")).sendKeys("password");
 		}
 		driver.findElement(By.id("loginbtn")).click();		
 		fetchAllContent();
