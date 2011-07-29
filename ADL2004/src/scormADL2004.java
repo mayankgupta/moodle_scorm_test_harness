@@ -60,7 +60,9 @@ public class scormADL2004 {
 		driver.switchTo().window("moodleWindow");
 	}
 	@Test
-	//navigate inside ADL SCORM 2004 Test Course
+	/**
+	 * navigate inside ADL SCORM 2004 Test Course
+	 */
 	public void loginCourse() throws IOException {
 		String username = System.getProperty("username");
 		String password = System.getProperty("password");
@@ -74,8 +76,8 @@ public class scormADL2004 {
 			driver.findElement(By.id("password")).sendKeys(password);
 		} else {
 			//If username or password not specified.
-			driver.findElement(By.id("username")).sendKeys("joestudent");
-			driver.findElement(By.id("password")).sendKeys("password");
+			driver.findElement(By.id("username")).sendKeys("admin");
+			driver.findElement(By.id("password")).sendKeys("Admin@11");
 		}
 		driver.findElement(By.id("loginbtn")).click();		
 		fetchAllContent();
@@ -94,14 +96,19 @@ public class scormADL2004 {
 		//System.out.println(scormUploaded);
 		//driver.findElement(By.partialLinkText("SCORM package")).click();
 	}
-	// Compile SCO Array
+	/**
+	 * Compile SCO Array
+	 * @return
+	 */
 	public int fetchAllSCO() {
 		wait.until(presenceOfElementLocated(By.className("ygtvrow")));
 		String scoes = driver.findElement(By.className("ygtvchildren")).getText();
 		int scoCount = counter(scoes, "\n");
 		return scoCount;
 	}
-	// Execute CM-01 Test
+	/**
+	 * Execute CM-01 Test
+	 */
 	public void handleCM01Test() {
 		driver.switchTo().frame("scorm_object");
 		wait.until(presenceOfElementLocated(By.id("tRadio0")));
@@ -124,7 +131,9 @@ public class scormADL2004 {
 		driver.findElement(By.id("tRadio1")).click();
 		driver.findElement(By.id("submit")).click();
 	}
-	// Handle / Launch SCO's
+	/**
+	 * Handle / Launch SCO's
+	 */
 	public void defaultSCOHandler() {
 		// Handle Selenium IE Bug by explicit wait
 		int scoCount = fetchAllSCO();
@@ -193,7 +202,10 @@ public class scormADL2004 {
 			wait.until(presenceOfElementLocated(By.partialLinkText(testsToExecute[i]+" SCORM package")));
 		}
 	}
-	//Pulls out and formulates a list of SCORM packages uploaded.
+	/**
+	 * Pulls out and formulates a list of SCORM packages uploaded.
+	 * @param tests
+	 */
 	public void validateSCORM (String tests) {
 		//tests="CM-01";
 		if (tests == null) {
@@ -230,7 +242,12 @@ public class scormADL2004 {
 		String[] testsToExecute = testsToExecute(content, tests);
 		testsHandler(testsToExecute);
 	}
-	//Build up array of tests to execute / display warning if specified test not found
+	/**
+	 * Build up array of tests to execute / display warning if specified test not found
+	 * @param content
+	 * @param tests
+	 * @return
+	 */
 	public String[] testsToExecute (String content, String tests) {
 		String sub = null, temp ="";
 		//Hack to find last test
@@ -259,7 +276,12 @@ public class scormADL2004 {
 		String[] testsToExecute = temp.split(",");
 		return testsToExecute;
 	}
-	//Count number, by manipulating String
+	/**
+	 *  Count number, by manipulating String
+	 * @param content
+	 * @param delimeter
+	 * @return
+	 */
 	 public int counter(String content, String delimeter) {
 		 int len = delimeter.length();
 		 int count = 0;
@@ -272,6 +294,12 @@ public class scormADL2004 {
 		 }
 		 return count+1;
 	 }
+	/**
+	 * Read File for tests specified. 
+	 * @param filePath
+	 * @return
+	 * @throws IOException
+	 */
 	public String readFile(String filePath) throws IOException {
 		String tests = null;
 		try {
@@ -295,7 +323,11 @@ public class scormADL2004 {
 		driver.switchTo().window("");
 		driver.close();
 	}
-	// Explicit Wait for element function
+	/**
+	 * Explicit Wait for element function
+	 * @param locator
+	 * @return
+	 */
 	public ExpectedCondition<WebElement> presenceOfElementLocated(final By locator) {
 	    return new ExpectedCondition<WebElement>() {
 	      public WebElement apply(WebDriver webDriver) {
