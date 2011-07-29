@@ -1,24 +1,3 @@
-/**
- * This file is part of Moodle - http://moodle.org/
- * Moodle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * at your option) any later version.
- * 
- * Moodle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-/**
- * @author    Mayank Gupta
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -44,10 +23,10 @@ public class scormADL2004 {
 
 	@Before
 	public void setUp() throws IOException, InterruptedException {
-	    driver = new InternetExplorerDriver();
+		driver = new InternetExplorerDriver();
 	    wait = new WebDriverWait(driver, 60);
 	    String testSuiteURL = System.getProperty("testSuiteURL");
-            String moodleURL = System.getProperty("moodleURL");
+	    String moodleURL = System.getProperty("moodleURL");
 	    if (testSuiteURL == null) {
 			throw new IOException("ADL SCORM 2004 Test Suite URL not specified");
 		} 
@@ -81,9 +60,7 @@ public class scormADL2004 {
 		driver.switchTo().window("moodleWindow");
 	}
 	@Test
-	/**
-	 * navigate inside ADL SCORM 2004 Test Course
-	 */
+	//navigate inside ADL SCORM 2004 Test Course
 	public void loginCourse() throws IOException {
 		String username = System.getProperty("username");
 		String password = System.getProperty("password");
@@ -117,27 +94,51 @@ public class scormADL2004 {
 		//System.out.println(scormUploaded);
 		//driver.findElement(By.partialLinkText("SCORM package")).click();
 	}
-	/**
-	 *  Compile SCO Array
-	 * @return scoCount
-	 */
+	// Compile SCO Array
 	public int fetchAllSCO() {
 		wait.until(presenceOfElementLocated(By.className("ygtvrow")));
 		String scoes = driver.findElement(By.className("ygtvchildren")).getText();
 		int scoCount = counter(scoes, "\n");
 		return scoCount;
 	}
-	/**
-	 *  Handle / Launch SCO's
-	 */
-	public void scoHandler () {
+	// Execute CM-01 Test
+	public void handleCM01Test() {
+		driver.switchTo().frame("scorm_object");
+		wait.until(presenceOfElementLocated(By.id("tRadio0")));
+		//WebElement elementIR = driver.findElement(By.id("fRadio0"));
+		//elementIR.click();
+		driver.findElement(By.id("fRadio1")).click();
+		driver.findElement(By.id("tRadio2")).click();
+		driver.findElement(By.id("submit")).click();
+		//elementIR.submit();
+		driver.switchTo().window("moodleWindow");
+		//driver.findElement(By.id("ygtvlabelel2")).click();
+		wait.until(presenceOfElementLocated(By.id("scorm_object")));
+		System.out.println("done 1st");
+		driver.switchTo().frame("scorm_object");
+		//wait.until(presenceOfElementLocated(By.id("submit")));
+		System.out.println("done 2nd");
+		wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Did the LMS provide an enabled UI device that corresponds to the Continue Navigation Event?')]")));
+		System.out.println("done");
+		driver.findElement(By.id("tRadio0")).click();
+		driver.findElement(By.id("tRadio1")).click();
+		driver.findElement(By.id("submit")).click();
+	}
+	// Handle / Launch SCO's
+	public void defaultSCOHandler() {
 		// Handle Selenium IE Bug by explicit wait
 		int scoCount = fetchAllSCO();
 		for (int i = 1; i <= scoCount; i++) {
-			driver.findElement(By.id("ygtvlabelel"+i)).click();
+			//First Activity does not need to be launched.
+			if(i != 1) {
+				driver.findElement(By.id("ygtvlabelel"+i)).click();
+			}
 			driver.switchTo().frame("scorm_object");
 			wait.until(presenceOfElementLocated(By.id("teststatus")));
-			wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Status:  Testing Completed.')]")));
+			System.out.println("Testing Activity "+i+". Please Wait... ");
+			//Check only for "Completed." as some packages contain extra spaces
+			wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Completed.')]")));
+			System.out.println("Testing of Activity "+i+" Completed.");
 			driver.switchTo().window("moodleWindow");
 		}
 		System.out.println("Testing Completed.");
@@ -154,6 +155,8 @@ public class scormADL2004 {
 		for(int i = 0; i < testsToExecute.length; i++) {
 			multipleTestsSelect.selectByVisibleText(testsToExecute[i]);
 		}
+		// Execute JavaScript instead of click on add
+		//((JavascriptExecutor) driver).executeScript("parent.controls.addItem(this.form.possible, this.form.chosen);");
 		driver.findElement(By.id("add")).click();
 		driver.switchTo().window("");
 		driver.switchTo().frame("controls");
@@ -177,19 +180,25 @@ public class scormADL2004 {
 			wait.until(presenceOfElementLocated(By.id("n")));
 			driver.findElement(By.id("n")).click();
 			driver.findElement(By.xpath("//input[@value='Enter']")).click();
-			scoHandler();
+			//switch cannot compare string
+			// TODO add handle for CM-01 Test
+			if(testsToExecute[i].equalsIgnoreCase("CM-01")) {
+				handleCM01Test();
+			}
+			// default case
+			else {
+				defaultSCOHandler();
+			}
 			driver.findElement(By.linkText("ADL 2004")).click();
+			wait.until(presenceOfElementLocated(By.partialLinkText(testsToExecute[i]+" SCORM package")));
 		}
 	}
-	/**
-	 * Pulls out and formulates a list of SCORM packages uploaded.
-	 * @param tests
-	 */
+	//Pulls out and formulates a list of SCORM packages uploaded.
 	public void validateSCORM (String tests) {
-		//tests="testing,tags";
+		//tests="CM-01";
 		if (tests == null) {
 			//Default case, define all tests
-			tests = "API,CM-01,CM-02a,CM-02b,CM-03a,CM-03b,CM-04a,CM-04b" +
+			tests = "API,CM-01,CM-02a,CM-02b,CM-03a,CM-03b,CM-04a,CM-04b," +
 					"CM-04c,CM-04d,CM-04a,CM-05,CM-06,CM-07a,CM-07b,CM-07c," +
 					"CM-07d,CM-07e,CM-07f,CM-07b,CM-08,CM-09aa,CM-09ab,CM-09ba," +
 					"CM-09bb,CM-09ca,CM-09cb,CM-09ab,CM-10,CM-11,CM-13,CM-14," +
@@ -221,11 +230,7 @@ public class scormADL2004 {
 		String[] testsToExecute = testsToExecute(content, tests);
 		testsHandler(testsToExecute);
 	}
-	/**
-	 * Build up array of tests to execute / display warning if specified test not found
-	 * @param content
-	 * @param tests
-	 */
+	//Build up array of tests to execute / display warning if specified test not found
 	public String[] testsToExecute (String content, String tests) {
 		String sub = null, temp ="";
 		//Hack to find last test
@@ -234,6 +239,13 @@ public class scormADL2004 {
 		int j = tests.indexOf(",");
 		while (j != -1) {
 			sub = tests.substring(i, j);
+			//TODO add handle for CM-01, Selenium bug.
+			if(sub.equalsIgnoreCase("CM-01")) {
+				System.out.println("ADL SCORM 2004 CM-01 Test not supported");
+				i = j+1;
+				j = tests.indexOf(",", i);
+				continue;
+			}
 			if (content.toLowerCase().contains(sub.toLowerCase())) {
 				temp += sub+',';
 			} else {
@@ -247,30 +259,19 @@ public class scormADL2004 {
 		String[] testsToExecute = temp.split(",");
 		return testsToExecute;
 	}
-	/**
-	 * Count number, by manipulating String
-	 * @param content
-	 * @param delimeter
-	 * @return count
-	 */
-	public int counter(String content, String delimeter) {
-		int len = delimeter.length();
-		int count = 0;
-		if (len > 0) {  
-			int start = content.indexOf(delimeter);
-			while (start != -1) {
-				count++;
-				start = content.indexOf(delimeter, start+len);
-			}
-		}
-		return count+1;
-	}
-	/**
-	 * Read File for tests specified.
-	 * @param filePath
-	 * @return tests
-	 * @throws IOException
-	 */
+	//Count number, by manipulating String
+	 public int counter(String content, String delimeter) {
+		 int len = delimeter.length();
+		 int count = 0;
+		 if (len > 0) {  
+			 int start = content.indexOf(delimeter);
+			 while (start != -1) {
+				 count++;
+				 start = content.indexOf(delimeter, start+len);
+			 }
+		 }
+		 return count+1;
+	 }
 	public String readFile(String filePath) throws IOException {
 		String tests = null;
 		try {
@@ -294,11 +295,7 @@ public class scormADL2004 {
 		driver.switchTo().window("");
 		driver.close();
 	}
-	/**
-	 *  Explicit Wait for element function
-	 * @param locator
-	 * @return
-	 */
+	// Explicit Wait for element function
 	public ExpectedCondition<WebElement> presenceOfElementLocated(final By locator) {
 	    return new ExpectedCondition<WebElement>() {
 	      public WebElement apply(WebDriver webDriver) {
