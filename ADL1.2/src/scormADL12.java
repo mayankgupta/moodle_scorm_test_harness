@@ -107,6 +107,7 @@ public class scormADL12 {
 		}
 		driver.findElement(By.xpath("//input[@value='Enter']")).click();
 		wait.until(presenceOfElementLocated(By.id("ygtvcontentel2")));
+		wait.until(presenceOfElementLocated(By.id("scorm_object")));
 		System.out.println("SCO Loaded. Testing ...");
 		driver.switchTo().frame("scorm_object");
 		if ((course == 1 && currentSCO != 4) || (course == 2 && currentSCO != 2)) {
