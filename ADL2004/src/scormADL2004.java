@@ -349,8 +349,6 @@ public class scormADL2004 {
 		driver.findElement(By.id("continue")).click();
 		try {
 			driver.switchTo().alert().accept();
-			System.out.println("WARNING: Not all 2004 packages are being tested. " +
-					"The SCORM 2004 Conformance Label will not be evaluated.");
 		} catch (NoAlertPresentException ex) {
 		}
 				
