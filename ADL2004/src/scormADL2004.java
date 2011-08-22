@@ -144,22 +144,20 @@ public class scormADL2004 {
 		}
 		element.submit();
 	}
-	public void checkLoginSession() {
-		// SwitchTo window before switching to frame.
-		driver.switchTo().window("");
-		driver.switchTo().frame("currentInstructions");
-		String userInstruction = driver.findElement(By.id("userInstruction")).getText();
-		if (userInstruction.contains("Moodle Learner 1") && loginSession != 1) {
-			switchLoginSession(1);
-		} else if(userInstruction.contains("Moodle Learner 2") && loginSession != 2) {
-			switchLoginSession(2);
-		}
-	}
 	public String readUserInstructions() {
 		// Switch to window of TestSuite
 		driver.switchTo().window("");
 		driver.switchTo().frame("currentInstructions");
 		return driver.findElement(By.id("userInstruction")).getText();
+	}
+	public void checkLoginSession() {
+		// SwitchTo window before switching to frame.
+		String userInstruction = readUserInstructions();
+		if (userInstruction.contains("Moodle Learner 1") && loginSession != 1) {
+			switchLoginSession(1);
+		} else if(userInstruction.contains("Moodle Learner 2") && loginSession != 2) {
+			switchLoginSession(2);
+		}
 	}
 	public void answerDefaultUI(int scoNo) {
 		driver.switchTo().window("moodleWindow");
@@ -351,13 +349,15 @@ public class scormADL2004 {
 		driver.findElement(By.id("continue")).click();
 		try {
 			driver.switchTo().alert().accept();
-			System.out.println("WARNING: Not all 2004 packages are being tested." +
+			System.out.println("WARNING: Not all 2004 packages are being tested. " +
 					"The SCORM 2004 Conformance Label will not be evaluated.");
 		} catch (NoAlertPresentException ex) {
 		}
 				
 	}
 	public void launchTestPackage (String testPackageName) {
+		// Check to see which user should launch the package.
+		checkLoginSession();
 		driver.switchTo().window("moodleWindow");
 		wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Weekly outline')]")));
 		if (testPackageName.equalsIgnoreCase("DDM")) {
@@ -365,9 +365,16 @@ public class scormADL2004 {
 		} else {
 			driver.findElement(By.partialLinkText(testPackageName+" SCORM package")).sendKeys(Keys.ENTER);
 		}
-		wait.until(presenceOfElementLocated(By.id("n")));
-		driver.findElement(By.id("n")).click();
-		driver.findElement(By.xpath("//input[@value='Enter']")).click();
+		// Workaround for WebDriver bug, Seleniu, IE.
+		wait.until(presenceOfElementLocated(By.id("page-footer")));
+		// Refresh Driver to crawl page again.
+		driver.switchTo().window("moodleWindow");
+		if(isElementPresent(By.id("n"))) {
+			WebElement element = driver.findElement(By.id("n"));
+			element.click();
+			element.submit();
+			//driver.findElement(By.xpath("//input[@value='Enter']")).click();
+		}
 	}
 	/**
 	 * Handle / Launches test packages in order they are specified.
@@ -402,14 +409,12 @@ public class scormADL2004 {
 			driver.switchTo().window("moodleWindow");
 			driver.findElement(By.linkText("Exit activity")).click();
 			wait.until(presenceOfElementLocated(By.partialLinkText(testsToExecute[i]+" SCORM package")));
-			// If this is not last test, hit continue
-			System.out.println("value of i is" +i);
-			System.out.println("value of test is" +((testsToExecute.length)-1));
 			driver.switchTo().window("");
 			driver.switchTo().frame("controls");
 			wait.until(presenceOfElementLocated(By.id("continue")));
 			driver.findElement(By.id("continue")).sendKeys(Keys.ENTER); 
 		}
+		driver.findElement(By.linkText("Logout")).click();
 		System.out.println("Tested All Packages. The Script will now exit.");
 	}
 	/**
@@ -419,11 +424,11 @@ public class scormADL2004 {
 	public void validateSCORM (String tests) {
 		if (tests == null) {
 			//Default case, define all tests
-			tests = "API,DDMa,DDMb,DMB,DMI,CM-01,CM-02a,CM-02b,CM-03a,CM-03b,CM-04a," +
+			tests = "API,DMI,DMB,DDM,CM-01,CM-02a,CM-02b,CM-03a,CM-03b,CM-04a," +
 					"CM-04b,CM-04c,CM-04d,CM-04a,CM-05,CM-06,CM-07a,CM-07b,CM-07c," +
 					"CM-07d,CM-07e,CM-07f,CM-07b,CM-08,CM-09aa,CM-09ab,CM-09ba," +
-					"CM-09bb,CM-09ca,CM-09cb,CM-09ab,CM-10,CM-11,CM-13,CM-14," +
-					"CM-16,CM-17a,CM-17b,CO-01,CO-02,CO-03,CO-04a,CO-04b,CO-04c," +
+					"CM-09bb,CM-09ca,CM-09cb,CM-09ab,CM-10,CM-11,CM-13,CM-14,CM-15," +
+					"CM-16,CM-17a,CM-17b,CO-01,CO-02a,CO-02b,CO-03,CO-04a,CO-04b,CO-04c," +
 					"CO-05a,CO-05b,CO-05a,CO-06,CO-07a,CO-07b,CO-08a,CO-08b," +
 					"CO-09,CO-10,CO-11,CO-12a,CO-12b,CO-12c,CO-12d,CO-13a,CO-13b," +
 					"CT-01,CT-02,CT-03,CT-04,CT-05,CT-06,CT-07," +
@@ -436,12 +441,11 @@ public class scormADL2004 {
 					"RU-02b,RU-03a,RU-03b,RU-04aa,RU-04ab,RU-04ba,RU-04bb,RU-04bc," +
 					"RU-04bd,RU-05a,RU-05b,RU-06a,RU-06b,RU-07a,RU-07b,RU-07c,RU-08a," +
 					"RU-08b,RU-09,RU-10,RU-11,RU-12a,RU-12b,RU-13a,RU-13b,RU-13c," +
-					"RU-13d,RU-13e,RU-14a,RU-14b,RU-14c,RU-15a,RU-15b,RU-15c,RU-15d," +
+					"RU-13d,RU-13e,RU-14a,RU-14b,RU-14c,RU-14d,RU-15a,RU-15b,RU-15c,RU-15d," +
 					"RU-16,RU-17a,RU-17b,RU-18a,RU-18b,RU-19a,RU-19b,RU-12a,SX-02," +
 					"SX-03,SX-04a,SX-04b,SX-05,SX-06,SX-07a,SX-07b,SX-07c,SX-07d,SX-07e," +
 					"SX-08a,SX-08b,SX-09,SX-10a,SX-10b,SX-10c,SX-10d,SX-11a,SX-11b," +
 					"SX-11c,SX-12a,SX-12b,SX-12c,T-01a,T-01b";
-			//tests = "CM1,testing,tags";
 		}
 		// Check for Selenium page load bug in IE WebDriver
 		wait.until(presenceOfElementLocated(By.className("section")));
