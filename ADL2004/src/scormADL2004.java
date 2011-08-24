@@ -135,12 +135,14 @@ public class scormADL2004 {
 			element.clear();
 			driver.findElement(By.id("username")).sendKeys(username1);
 			element.sendKeys(password1);
+			loginSession = 1;
 		} else {
 			wait.until(presenceOfElementLocated(By.id("username")));
 			driver.findElement(By.id("username")).clear();
 			element = driver.findElement(By.id("password"));
 			driver.findElement(By.id("username")).sendKeys(username2);
 			element.sendKeys(password2);
+			loginSession = 2;
 		}
 		element.submit();
 	}
@@ -232,7 +234,7 @@ public class scormADL2004 {
 		// Handle Selenium IE Bug by explicit wait
 		int scoCount = fetchAllSCO();
 		int scoNo = 1;
-		String userInstruction, activityName;
+		String userInstruction, activityName = null;
 		// Not infinite loop, testing based on TestSuite Instrcutions
 		while (scoCount > 0) {
 			//First Activity does not need to be launched, launch after first
@@ -300,6 +302,10 @@ public class scormADL2004 {
 					System.out.println("Testing of Package Completed.");
 					break;
 				}
+			} else if(userInstruction.isEmpty()) {
+				// Launch last activity again.
+				driver.switchTo().window("moodleWindow");
+				driver.findElement(By.xpath("//span[contains(.,'"+activityName+"')]")).click();
 			}
 			scoNo++;
 		}
@@ -444,6 +450,7 @@ public class scormADL2004 {
 					"SX-03,SX-04a,SX-04b,SX-05,SX-06,SX-07a,SX-07b,SX-07c,SX-07d,SX-07e," +
 					"SX-08a,SX-08b,SX-09,SX-10a,SX-10b,SX-10c,SX-10d,SX-11a,SX-11b," +
 					"SX-11c,SX-12a,SX-12b,SX-12c,T-01a,T-01b";
+			tests = "DMI";
 		}
 		// Check for Selenium page load bug in IE WebDriver
 		wait.until(presenceOfElementLocated(By.className("section")));
@@ -534,7 +541,14 @@ public class scormADL2004 {
 	}
 	@After
 	public void tearDown() {
+		driver.switchTo().window("moodleWindow");
 		driver.close();
+		// Give proper closing and log saving time
+		try {
+			Thread.sleep(4000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		driver.switchTo().window("");
 		driver.close();
 	}
