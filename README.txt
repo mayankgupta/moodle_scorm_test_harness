@@ -14,7 +14,7 @@ downloaded from the GitHub code repository at -
 
 Moodle SCORM 2004 compliance
 ========
-To keep a track of Moodle SCORM 2004 compliance - progress 
+To keep a track of Moodle SCORM 2004 compliance - progress, 
 you can add yourself as a watcher to MDL-7068 where each 
 SCORM 2004 test has been added as a task and continued patches 
 will be added to achieve Moodle SCORM 2004 compliance.
