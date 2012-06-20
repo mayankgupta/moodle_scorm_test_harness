@@ -60,10 +60,9 @@ public class scormADL12 {
 		driver.get(testSuiteURL);
 		driver.switchTo().frame("instructions");
 		driver.findElement(By.id("pname")).sendKeys("Moodle");
-		driver.findElement(By.id("pversion")).sendKeys("2011033003");
+		driver.findElement(By.id("pversion")).sendKeys("2.3");
 		driver.findElement(By.id("pvname")).sendKeys("MoodleHQ");
 		driver.findElement(By.id("continue01")).click();
-		//((JavascriptExecutor) driver).executeScript("window.open('"+moodleURL+"', 'moodleWindow');");
 		((JavascriptExecutor) driver).executeScript("window.open('"+moodleURL+"', 'moodleWindow');");
 		driver.switchTo().window("moodleWindow");
 	}
@@ -72,16 +71,16 @@ public class scormADL12 {
 	 * @param course
 	 */
 	public void loginCourse(int course) {
-		driver.findElement(By.linkText("ADL SCORM Test 1.2")).click();
+		driver.findElement(By.linkText("SCORM 1.2 ADL Test course")).click();
 		wait.until(presenceOfElementLocated(By.id("username")));
 		driver.findElement(By.id("username")).clear();
 		driver.findElement(By.id("password")).clear();
 		if (course != 2) {
 			driver.findElement(By.id("username")).sendKeys("joestudent");
-			driver.findElement(By.id("password")).sendKeys("password");
+			driver.findElement(By.id("password")).sendKeys("joestudent");
 		} else {
 			driver.findElement(By.id("username")).sendKeys("marylearner");
-			driver.findElement(By.id("password")).sendKeys("password");
+			driver.findElement(By.id("password")).sendKeys("marylearner");
 		}
 		driver.findElement(By.id("loginbtn")).click();
 		wait.until(presenceOfElementLocated(By.xpath("//span[text()='ADL SCORM Test Course I']")));
