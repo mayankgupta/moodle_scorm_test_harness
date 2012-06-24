@@ -64,11 +64,11 @@ public class scormADL2004 {
 		}
 		if (username1 == null) {
 			username1 = "joestudent";
-			password1 = "password";
+			password1 = "joestudent";
 		}
 		if (username2 == null) {
 			username2 = "marylearner";
-			password2 = "password";
+			password2 = "marylearner";
 		}
 	    driver.get(testSuiteURL);
 	    // Overcome Selenium IE Page load Bug.
@@ -101,7 +101,7 @@ public class scormADL2004 {
 	 * navigate inside ADL SCORM 2004 Test Course to check for packages uploaded.
 	 */
 	public void loginCourse() throws IOException {
-		driver.findElement(By.linkText("ADL SCORM Test 2004")).sendKeys(Keys.ENTER);
+		driver.findElement(By.linkText("SCORM 2004 ADL test course")).sendKeys(Keys.ENTER);
 		wait.until(presenceOfElementLocated(By.id("username")));
 		driver.findElement(By.id("username")).clear();
 		driver.findElement(By.id("password")).clear();
@@ -146,8 +146,8 @@ public class scormADL2004 {
 			//driver.findElement(By.linkText("Logout")).click();
 			// Workaround for Selenium bug - 1020, to be fixed in 2.5.0
 			driver.findElement(By.linkText("Logout")).sendKeys(Keys.ENTER);
-			wait.until(presenceOfElementLocated(By.linkText("ADL SCORM Test 2004")));
-			driver.findElement(By.linkText("ADL SCORM Test 2004")).click();
+			wait.until(presenceOfElementLocated(By.linkText("SCORM 2004 ADL test course")));
+			driver.findElement(By.linkText("SCORM 2004 ADL test course")).click();
 		}
 		if (toLogin != 2) {
 			wait.until(presenceOfElementLocated(By.id("username")));
@@ -287,7 +287,7 @@ public class scormADL2004 {
 			}
 			// Read instructions to launch new activity
 			// First Activity does not need to be launched.
-			
+
 			userInstruction = readUserInstructions();
 			if (!userInstruction.contains("relaunch") && !(userInstruction.contains("please exit the package/course")) 
 					&& userInstruction.contains("launch")) {
@@ -378,13 +378,13 @@ public class scormADL2004 {
 			driver.switchTo().alert().accept();
 		} catch (NoAlertPresentException ex) {
 		}
-				
+
 	}
 	public void launchTestPackage (String testPackageName) {
 		// Check to see which user should launch the package.
 		checkLoginSession();
 		driver.switchTo().window("moodleWindow");
-		wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Weekly outline')]")));
+		wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Recent activity')]")));
 		if (testPackageName.equalsIgnoreCase("DDM")) {
 			driver.findElement(By.partialLinkText(testPackageName+"a SCORM package")).sendKeys(Keys.ENTER);
 		} else {
@@ -418,7 +418,7 @@ public class scormADL2004 {
 		checkLoginSession();
 		driver.switchTo().window("moodleWindow");
 		// Wait till Page completely loads - Selenium Bug
-		wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Weekly outline')]")));
+		wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Recent activity)]")));
 		for (int i = 0; i<testsToExecute.length; i++) {
 			System.out.println("Testing ADL SCORM 2004 "+testsToExecute[i]+" package...");
 			launchTestPackage(testsToExecute[i]);
