@@ -83,11 +83,11 @@ public class scormADL12 {
 			driver.findElement(By.id("password")).sendKeys("marylearner");
 		}
 		driver.findElement(By.id("loginbtn")).click();
-		wait.until(presenceOfElementLocated(By.xpath("//span[text()='ADL SCORM Test Course I']")));
+		wait.until(presenceOfElementLocated(By.xpath("//span[text()='LMSTestCourse01']")));
 		if (course != 1) {
-			driver.findElement(By.xpath("//span[text()='ADL SCORM Test Course II']")).click();
+			driver.findElement(By.xpath("//span[text()='LMSTestCourse02']")).click();
 		} else {
-			driver.findElement(By.xpath("//span[text()='ADL SCORM Test Course I']")).click();
+			driver.findElement(By.xpath("//span[text()='LMSTestCourse01']")).click();
 		}
 	}
 	/**
@@ -108,16 +108,22 @@ public class scormADL12 {
 		wait.until(presenceOfElementLocated(By.id("ygtvcontentel2")));
 		wait.until(presenceOfElementLocated(By.id("scorm_object")));
 		System.out.println("SCO Loaded. Testing ...");
+		long t0,t1;
+		t0=System.currentTimeMillis();
+		do {
+			t1=System.currentTimeMillis();
+		}
+		while (t1-t0<2000);
 		driver.switchTo().frame("scorm_object");
 		if ((course == 1 && currentSCO != 4) || (course == 2 && currentSCO != 2)) {
-			wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Status:  This SCO Test Completed.')]")));	
+			wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'This SCO Test Completed.')]")));	
 		} else if ((course == 1 && currentSCO == 4) || (course == 2 && currentSCO == 2)) {
 			//for both course 1 and course 2
 			if (scoLeft !=0){
 				wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Please Log out and re-login to the LMS.')]")));
 				return;
 			} else {
-				wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'Status:  This SCO Test Completed.')]")));
+				wait.until(presenceOfElementLocated(By.xpath("//*[contains(.,'This SCO Test Completed.')]")));
 			}
 		}
 	    System.out.println(driver.findElement(By.id("teststatus")).getText());
